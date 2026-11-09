@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="img/panca-0.jpg">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
-<title>Spinta Trazione Braccia</title>
+<title>Scheda Palestra</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
 <style>
@@ -67,6 +67,12 @@ button { cursor: pointer; touch-action: manipulation; }
 .eyebrow .st { overflow: hidden; text-overflow: ellipsis; font-weight: 500; letter-spacing: .02em; text-transform: none; }
 .eyebrow .st[data-s="error"], .eyebrow .st[data-s="slow"] { color: var(--accent); }
 h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.02; text-transform: uppercase; text-wrap: balance; }
+.days { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.day { border: 2px solid var(--line); background: var(--surface); border-radius: 12px; padding: 6px 8px; text-align: left; min-width: 0; display: flex; flex-direction: column; }
+.day b { font-family: var(--font-display); font-size: 17px; text-transform: uppercase; line-height: 1.1; }
+.day span { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.day[aria-pressed="true"] { border-color: var(--accent); background: var(--surface); }
+.day[aria-pressed="true"] b { color: var(--accent); }
 .segs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 3px; }
 .seg { height: 6px; border-radius: 3px; background: var(--surface2); border: 0; padding: 0; position: relative; }
 .seg::after { content: ""; position: absolute; inset: 0; border-radius: 3px; background: var(--ok); transform-origin: left; transform: scaleX(var(--p, 0)); }
@@ -208,11 +214,12 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
       <button type="button" class="menu" id="openSheet" aria-label="Elenco esercizi e storico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       <div class="htxt">
         <p class="eyebrow"><span id="pos">Esercizio 1 di 10</span><span class="st" id="stat" role="status" aria-live="polite"></span></p>
-        <h1 id="title">Spinta + Trazione + Braccia</h1>
+        <h1 id="title">Scheda Palestra</h1>
       </div>
     </div>
     <div class="segs" id="segs"></div>
   </header>
+  <div class="days" id="days"></div>
   <main id="stage" class="wrap" style="gap:12px"></main>
 </div>
 
@@ -248,33 +255,79 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
 <script>
 (function () {
   var YT = 'https://www.youtube.com/shorts/';
-  var PLAN = [
-    { id: 'mob', warm: true, title: 'Riscaldamento mobilità', tag: 'Triset', sets: 2, rest: 30,
+  function MOB() { return { id: 'mob', warm: true, title: 'Riscaldamento mobilità', tag: 'Triset', sets: 2, rest: 30,
       cue: 'Cat cow, circonduzioni anche e braccia: 10-12 ciascuno, poi 30 sec di pausa.',
-      ex: [{ id: 'mob', name: 'Cat cow + circonduzioni', fields: [], yt: 'C3i9Rh7PGy4' }] },
-    { id: 'b1', title: 'Panca piana bilanciere', sets: 3, rest: 120, cue: 'Scapole indietro, piedi a terra, scendi controllato al petto.',
-      ex: [{ id: 'panca', name: 'Panca piana bilanciere', range: '6-8', yt: '0cXAp6WhSj4' }] },
-    { id: 'b2', title: 'Lat machine presa prona', sets: 3, rest: 120, cue: 'Petto alto, barra alla parte alta del petto, risali lento.',
-      ex: [{ id: 'lat', name: 'Lat machine presa prona', range: '8-10', yt: '02Qci1-0Aao' }] },
-    { id: 'b3', title: 'Incline chest press', sets: 3, rest: 120, cue: 'Carico costante, 1-2 ripetizioni di riserva.',
-      ex: [{ id: 'incline', name: 'Incline chest press', range: '8-12', yt: 'ocWA1FA6AkI' }] },
-    { id: 'b4', title: 'T-bar', sets: 3, rest: 120, cue: 'Schiena neutra, gomiti indietro, scendi in 2-3 sec.',
-      ex: [{ id: 'tbar', name: 'T-bar', range: '8-12', yt: 'Cp2MJSa4UaE' }] },
-    { id: 'b5', title: 'Alzate laterali ai cavi', sets: 3, rest: 90, cue: 'Niente slancio, sali fino alle spalle, scendi lento.',
-      ex: [{ id: 'lat-raise', name: 'Alzate laterali ai cavi', range: '12-15', yt: 'ZZYpkGiPcgk' }] },
-    { id: 'b6', title: 'Superset bicipiti + tricipiti', tag: 'Superset', sets: 3, rest: 120, cue: 'A1 e A2 di fila, poi recupero.',
-      ex: [{ id: 'curl-inc', label: 'A1', name: 'Curl panca inclinata', range: '10-12', yt: 'rAx_tf13V5k' },
-           { id: 'tri-over', label: 'A2', name: 'Estensioni sopra la testa', range: '10-12', yt: '09gpiVqdpPM' }] },
-    { id: 'b7', title: 'Superset martello + pushdown', tag: 'Superset', sets: 3, rest: 90, cue: 'B1 e B2 di fila, poi recupero.',
-      ex: [{ id: 'hammer', label: 'B1', name: 'Hammer curl', range: '12-15', yt: 'cGCbs0PNvW0' },
-           { id: 'pushdown', label: 'B2', name: 'Pushdown ai cavi', range: '12-15', yt: 'PC6dREPvYlQ' }] },
-    { id: 'b8', title: 'Crunch al cavo alto', sets: 3, rest: 60, cue: 'Fermo 1 sec in contrazione. Ginocchio dolorante: tappetino o versione in piedi.',
-      ex: [{ id: 'crunch', name: 'Crunch al cavo alto', range: '10-12', yt: 'Nbgzz8k_m8A' }] },
-    { id: 'b9', title: 'Cardio a piacere', sets: 1, rest: 0, cue: '8-10 minuti al ritmo che preferisci.',
-      ex: [{ id: 'cardio', name: 'Cardio', range: '8-10', fields: ['min'] }] }
-  ];
-  var EXMAP = {};
-  PLAN.forEach(function (b) { b.ex.forEach(function (e) { e.fields = e.fields || ['kg', 'reps']; e.block = b; EXMAP[e.id] = e; }); });
+      ex: [{ id: 'mob', name: 'Cat cow + circonduzioni', fields: [], yt: 'C3i9Rh7PGy4' }] }; }
+  function CARDIO() { return { id: 'cardio', title: 'Cardio (facoltativo)', sets: 1, rest: 0, cue: '8-10 minuti al ritmo che preferisci, se hai tempo.',
+      ex: [{ id: 'cardio', name: 'Cardio', range: '8-10', fields: ['min'] }] }; }
+  function SS(id, title, sets, rest, cue, a, b) { return { id: id, title: title, tag: 'Superserie', sets: sets, rest: rest, cue: cue, ex: [a, b] }; }
+  var DAYS = {
+    A: { name: 'Giorno A', sub: 'Panca, lat, gambe davanti', plan: [
+      MOB(),
+      SS('a1', 'Panca piana + Lat machine', 3, 120, 'A1 e A2 di fila, poi 2 minuti. Fermati a 1-2 ripetizioni dal cedimento.',
+        { id: 'panca', label: 'A1', name: 'Panca piana bilanciere', range: '6-8', yt: '0cXAp6WhSj4' },
+        { id: 'lat', label: 'A2', name: 'Lat machine presa prona', range: '8-10', yt: '02Qci1-0Aao' }),
+      SS('a2', 'Leg press + Leg curl seduto', 3, 120, 'Piedi a metà pedana, scendi finché la schiena resta appoggiata.',
+        { id: 'legpress', label: 'B1', name: 'Leg press', range: '8-12' },
+        { id: 'legcurl', label: 'B2', name: 'Leg curl seduto', range: '10-12' }),
+      SS('a3', 'Alzate laterali + Crunch al cavo', 3, 75, 'Alzate senza slancio. Crunch con fermo di 1 sec; ginocchio dolorante: tappetino spesso.',
+        { id: 'lat-raise', label: 'C1', name: 'Alzate laterali ai cavi', range: '12-15', yt: 'ZZYpkGiPcgk' },
+        { id: 'crunch', label: 'C2', name: 'Crunch al cavo alto', range: '10-12', yt: 'Nbgzz8k_m8A' }),
+      SS('a4', 'Curl inclinato + Estensioni sopra la testa', 2, 75, 'Entrambi con il muscolo ben allungato in basso.',
+        { id: 'curl-inc', label: 'D1', name: 'Curl panca inclinata', range: '10-12', yt: 'rAx_tf13V5k' },
+        { id: 'tri-over', label: 'D2', name: 'Estensioni sopra la testa', range: '10-12', yt: '09gpiVqdpPM' }),
+      CARDIO() ] },
+    B: { name: 'Giorno B', sub: 'Petto alto, rematore, femorali', plan: [
+      MOB(),
+      SS('b1', 'Incline press + T-bar', 3, 120, 'Carico costante su tutte le serie, 1-2 ripetizioni di riserva.',
+        { id: 'incline', label: 'A1', name: 'Incline chest press', range: '8-12', yt: 'ocWA1FA6AkI' },
+        { id: 'tbar', label: 'A2', name: 'T-bar', range: '8-12', yt: 'Cp2MJSa4UaE' }),
+      SS('b2', 'Stacco rumeno + Leg extension', 3, 120, 'Stacco: anche indietro, schiena neutra, bilanciere vicino alle gambe.',
+        { id: 'rdl', label: 'B1', name: 'Stacco rumeno', range: '8-10' },
+        { id: 'legext', label: 'B2', name: 'Leg extension', range: '12-15' }),
+      SS('b3', 'Spinte manubri + Face pull', 3, 90, 'Spinte da seduto senza inarcare. Face pull alla fronte, gomiti alti.',
+        { id: 'dbpress', label: 'C1', name: 'Spinte manubri da seduto', range: '8-10' },
+        { id: 'facepull', label: 'C2', name: 'Face pull', range: '12-15' }),
+      SS('b4', 'Hammer curl + Pushdown', 2, 75, 'Gomiti fermi ai fianchi in entrambi.',
+        { id: 'hammer', label: 'D1', name: 'Hammer curl', range: '12-15', yt: 'cGCbs0PNvW0' },
+        { id: 'pushdown', label: 'D2', name: 'Pushdown ai cavi', range: '12-15', yt: 'PC6dREPvYlQ' }),
+      CARDIO() ] },
+    C: { name: 'Giorno C', sub: 'Volume, gambe, braccia', plan: [
+      MOB(),
+      SS('c1', 'Lat presa neutra + Croci ai cavi', 3, 90, 'Lat al petto con gomiti stretti. Croci con gomiti morbidi, apri bene.',
+        { id: 'pd-neutral', label: 'A1', name: 'Lat machine presa neutra', range: '10-12' },
+        { id: 'fly', label: 'A2', name: 'Croci ai cavi', range: '12-15' }),
+      SS('c2', 'Split squat + Leg curl sdraiato', 3, 120, 'Split squat: kg per manubrio, ripetizioni per gamba. Ginocchio sopra il piede.',
+        { id: 'split', label: 'B1', name: 'Split squat manubri', range: '8-10' },
+        { id: 'legcurl-lying', label: 'B2', name: 'Leg curl sdraiato', range: '10-12' }),
+      SS('c3', 'Rematore manubrio + Alzate laterali', 3, 90, 'Rematore: ripetizioni per braccio, gomito verso l’anca.',
+        { id: 'dbrow', label: 'C1', name: 'Rematore manubrio', range: '10-12' },
+        { id: 'lat-raise', label: 'C2', name: 'Alzate laterali ai cavi', range: '12-15', yt: 'ZZYpkGiPcgk' }),
+      SS('c4', 'Curl EZ + French press manubri', 2, 75, 'Curl senza dondolare. French press: manubri ai lati della testa.',
+        { id: 'ezcurl', label: 'D1', name: 'Curl bilanciere EZ', range: '10-12' },
+        { id: 'french', label: 'D2', name: 'French press manubri', range: '10-12' }),
+      SS('c5', 'Reverse crunch + Polpacci', 2, 60, 'Reverse crunch: solleva il bacino, non dondolare. Polpacci alla pressa, pausa in allungamento.',
+        { id: 'revcrunch', label: 'E1', name: 'Reverse crunch', range: '12-15', fields: ['reps'] },
+        { id: 'calf', label: 'E2', name: 'Polpacci alla pressa', range: '12-15' }),
+      CARDIO() ] }
+  };
+  var DAYKEYS = ['A', 'B', 'C'], DAY = 'A', PLAN = DAYS.A.plan, EXMAP = {}, ALLEX = [];
+  DAYKEYS.forEach(function (d) { DAYS[d].plan.forEach(function (b) { b.ex.forEach(function (e) {
+    e.fields = e.fields || ['kg', 'reps']; e.block = b;
+    if (!EXMAP[e.id]) ALLEX.push(e);
+    EXMAP[e.id] = e;
+  }); }); });
+  function setDay(d) { DAY = DAYS[d] ? d : 'A'; PLAN = DAYS[DAY].plan; }
+  function suggestDay() {
+    var t = state.sessions[TODAY]; if (t && t.day) return t.day;
+    var ds = Object.keys(state.sessions).filter(function (d) { return d < TODAY && state.sessions[d].day; }).sort().reverse();
+    for (var j = 0; j < ds.length; j++) {
+      var s = state.sessions[ds[j]];
+      if (Object.keys(s.sets || {}).some(function (k) { return (s.sets[k] || []).some(function (r) { return r && r.done; }); }))
+        return DAYKEYS[(DAYKEYS.indexOf(s.day) + 1) % DAYKEYS.length];
+    }
+    return 'A';
+  }
 
   var LS = 'spinta-trazione-braccia-v1';
   var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
@@ -301,7 +354,7 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
     for (var j = 0; j < ds.length; j++) { var r = (state.sessions[ds[j]].sets || {})[e.id]; if (r && r.some(function (x) { return x && x.done; })) return r; }
     return null;
   }
-  function setTxt(e, r) { if (!r) return ''; if (e.fields[0] === 'min') return (r.min || '–') + ' min'; return (r.kg || '–') + '×' + (r.reps || '–'); }
+  function setTxt(e, r) { if (!r) return ''; if (e.fields[0] === 'min') return (r.min || '–') + ' min'; if (e.fields.length === 1) return (r.reps || '–') + ' rip'; return (r.kg || '–') + '×' + (r.reps || '–'); }
   function doneTxt(e, rs) { return (rs || []).filter(function (r) { return r && r.done; }).map(function (r) { return setTxt(e, r); }).join(' · '); }
   function blockCount(b) { var d = 0, t = 0; b.ex.forEach(function (e) { rows(e).slice(0, b.sets).forEach(function (r) { t++; if (r.done) d++; }); }); return { d: d, t: t }; }
   function firstOpen(b) { for (var i = 0; i < b.sets; i++) for (var k = 0; k < b.ex.length; k++) if (!rows(b.ex[k])[i].done) return { i: i, k: k }; return null; }
@@ -323,6 +376,7 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
   var STAT = { saving: '· salvataggio…', saved: '· salvato', local: '· salvato sul telefono', error: '· non salvato', slow: '· offline, copia locale' };
   function setStatus(k) { var el = $('#stat'); el.dataset.s = k; el.textContent = STAT[k] || ''; }
   function queue(key) {
+    if (key === 's') sess().day = DAY;
     saveLocal(); setStatus(store.mode === 'db' ? 'saving' : 'local');
     clearTimeout(pend[key]); pend[key] = setTimeout(function () { delete pend[key]; flush(key); }, 500);
   }
@@ -409,7 +463,8 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
   function allDone() { return PLAN.every(function (b) { var c = blockCount(b); return c.d === c.t; }); }
   function renderHead() {
     var b = curBlock();
-    $('#pos').textContent = 'Esercizio ' + (cur.b + 1) + ' di ' + PLAN.length;
+    $('#pos').textContent = DAYS[DAY].name + ' · ' + (cur.b + 1) + ' di ' + PLAN.length;
+    $('#days').innerHTML = DAYKEYS.map(function (d) { return '<button type="button" class="day" data-day="' + d + '" aria-pressed="' + (d === DAY) + '"><b>' + esc(DAYS[d].name) + '</b><span>' + esc(DAYS[d].sub) + '</span></button>'; }).join('');
     $('#title').textContent = b.title;
     $('#segs').innerHTML = PLAN.map(function (bb, j) {
       var c = blockCount(bb);
@@ -555,8 +610,8 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
       if (!ds.length) { body.innerHTML = '<div class="empty">Ancora nessuna serie registrata. Qui trovi carichi e ripetizioni di ogni allenamento.</div>'; return; }
       body.innerHTML = ds.map(function (d) {
         var s = state.sessions[d], n = 0;
-        var lines = PLAN.map(function (b) { return b.warm ? '' : b.ex.map(function (e) { var t = doneTxt(e, (s.sets || {})[e.id]); if (t) n += t.split('·').length; return t ? '<div class="hl"><b>' + esc(e.name) + '</b><span>' + esc(t) + '</span></div>' : ''; }).join(''); }).join('');
-        return '<article class="hcard"><h3>' + esc((d === TODAY ? 'Oggi · ' : '') + longDate(d)) + '</h3><p>' + n + ' serie registrate</p>' + lines + '</article>';
+        var lines = ALLEX.map(function (e) { if (e.block.warm) return ''; var t = doneTxt(e, (s.sets || {})[e.id]); if (t) n += t.split('·').length; return t ? '<div class="hl"><b>' + esc(e.name) + '</b><span>' + esc(t) + '</span></div>' : ''; }).join('');
+        return '<article class="hcard"><h3>' + esc((d === TODAY ? 'Oggi · ' : '') + longDate(d)) + '</h3>' + (s.day && DAYS[s.day] ? '<p><b>' + esc(DAYS[s.day].name) + '</b> · ' + esc(DAYS[s.day].sub) + '</p>' : '') + '<p>' + n + ' serie registrate</p>' + lines + '</article>';
       }).join('');
     }
   }
@@ -618,13 +673,19 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
     });
     saveLocal();
     if (!snap.metadata.fromCache) setStatus('saved');
-    if (sessChanged && !state.touched) { var f = firstOpenAll(); cur = f; render(); }
+    if (sessChanged && !state.touched) { setDay(suggestDay()); var f = firstOpenAll(); cur = f; render(); }
     else if (clipsChanged) mountMedia(true);
   }
   function firstOpenAll() { for (var j = 0; j < PLAN.length; j++) { var f = firstOpen(PLAN[j]); if (f) return { b: j, i: f.i, k: f.k }; } return { b: PLAN.length - 1, i: 0, k: 0 }; }
 
   loadLocal(); sess();
+  setDay(suggestDay());
   cur = firstOpenAll();
+  $('#days').addEventListener('click', function (ev) {
+    var t = ev.target.closest('[data-day]'); if (!t || t.dataset.day === DAY) return;
+    setDay(t.dataset.day); sess().day = DAY; state.touched = true; queue('s');
+    cur = firstOpenAll(); adjusting = null; confirmDel = null; mediaMsg = ''; render(); window.scrollTo(0, 0);
+  });
   render(); paintTimer(0);
 
   (function connect() {
