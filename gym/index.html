@@ -11,34 +11,34 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Scheda Palestra</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
 <style>
 /* Layout: un esercizio per schermata, comandi grandi a portata di pollice, barra fissa in basso con recupero e navigazione. */
 :root {
-  --bg: #EEF1F6;
-  --surface: #FFFFFF;
-  --surface2: #E2E7EF;
-  --ink: #111C33;
-  --muted: #56658A;
-  --line: #CDD5E2;
-  --accent: #D2500F;
+  --bg: #F6F1E9;
+  --surface: #FFFDF9;
+  --surface2: #EFE8DC;
+  --ink: #23201B;
+  --muted: #6E665A;
+  --line: #E3DACB;
+  --accent: #C2562B;
   --accent-ink: #FFFFFF;
-  --ok: #157A4C;
+  --ok: #3B7A57;
   --ok-ink: #FFFFFF;
-  --media: #0B1222;
+  --media: #1B1814;
   --font-display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
-  --font-body: 'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0A1120; --surface: #141E34; --surface2: #1E2B47; --ink: #EBF0F8; --muted: #93A1BF;
-    --line: #2A3A5C; --accent: #FF8A45; --accent-ink: #1C0D03; --ok: #4CC58C; --ok-ink: #03180E; --media: #050A14;
+    --bg: #171512; --surface: #211E1A; --surface2: #2B2722; --ink: #F2ECE2; --muted: #A79E90;
+    --line: #37322B; --accent: #E07A4F; --accent-ink: #1C0D03; --ok: #6DBB8C; --ok-ink: #0B1A11; --media: #0E0C0A;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0A1120; --surface: #141E34; --surface2: #1E2B47; --ink: #EBF0F8; --muted: #93A1BF;
-  --line: #2A3A5C; --accent: #FF8A45; --accent-ink: #1C0D03; --ok: #4CC58C; --ok-ink: #03180E; --media: #050A14;
+  --bg: #171512; --surface: #211E1A; --surface2: #2B2722; --ink: #F2ECE2; --muted: #A79E90;
+  --line: #37322B; --accent: #E07A4F; --accent-ink: #1C0D03; --ok: #6DBB8C; --ok-ink: #0B1A11; --media: #0E0C0A;
   color-scheme: dark;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -94,8 +94,8 @@ h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 2
 .musc svg { display: block; height: 136px; width: auto; }
 .musc polygon { stroke: var(--surface); stroke-width: .5; }
 .musc .mn { fill: #D9D2C5; } .musc .mp { fill: #D7263D; } .musc .ms { fill: #D7263D; fill-opacity: .4; }
-@media (prefers-color-scheme: dark) { .musc .mn { fill: #34436A; } }
-:root[data-theme="dark"] .musc .mn { fill: #34436A; } :root[data-theme="light"] .musc .mn { fill: #D9D2C5; }
+@media (prefers-color-scheme: dark) { .musc .mn { fill: #3A342C; } }
+:root[data-theme="dark"] .musc .mn { fill: #3A342C; } :root[data-theme="light"] .musc .mn { fill: #D9D2C5; }
 .mleg { font-size: 14px; display: grid; gap: 4px; min-width: 0; } .mleg b { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .mleg p { margin: 0; } .mleg .sec { color: var(--muted); }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; } i.dot.mp { background: #D7263D; } i.dot.ms { background: #D7263D; opacity: .4; }
@@ -392,7 +392,7 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
 
   /* ---------- salvataggio ---------- */
   var store = { mode: 'local', col: null }, assets = null, pend = {}, chain = Promise.resolve(), loadTimer = 0;
-  var STAT = { saving: '· salvataggio…', saved: '· salvato', local: '· salvato sul telefono', error: '· non salvato', slow: '· offline, copia locale' };
+  var STAT = { saving: '· salvataggio…', saved: '· salvato', local: (window.parent !== window ? '' : '· salvato sul telefono'), error: '· non salvato', slow: '· offline, copia locale' };
   function setStatus(k) { var el = $('#stat'); el.dataset.s = k; el.textContent = STAT[k] || ''; }
   function queue(key) {
     if (key === 's') sess().day = DAY;
@@ -675,7 +675,7 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
     var wd = new Date().getDay();
     var h = '<div class="dd"><p>Dieta di Roberto, edizione Inverno. Il training è consigliato lunedì, mercoledì e venerdì; martedì e giovedì camminata.</p>' +
       '<p><b>Integrazione:</b> creatina 3 g ogni giorno con un pasto · omega 3 a pranzo o cena · multivitaminico con un pasto · proteina di soia 25 g a colazione.</p>' +
-      '<p>Dopo l’allenamento mangia il pasto proteico più vicino. Quantità e verdure: <a href="../#diet" target="_top">piano completo</a>.</p></div>';
+      '<p>Dopo l’allenamento mangia il pasto proteico più vicino. Quantità e verdure: <a href="../#oggi" target="_top">piano completo</a>.</p></div>';
     DIET.forEach(function (x) {
       var gym = ''; DAYKEYS.forEach(function (k) { if (DAYS[k].dow === x.d) gym = DAYS[k].name + ' · ' + DAYS[k].sub; });
       h += '<article class="dd' + (x.d === wd ? ' today' : '') + '"><h3>' + esc((x.d === wd ? 'Oggi · ' : '') + x.n) + '<small>' + x.k + ' kcal · P ' + x.p + ' g</small></h3>' +

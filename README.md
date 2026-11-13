@@ -1,7 +1,7 @@
 # Arme P&B — dieta e palestra in un'unica app
 
-- `index.html`: shell con login Firebase e sincronizzazione dei dati tra dispositivi
-- `diet/`: piano alimentare adattivo (sorgenti in `diet/src`, `python3 build.py` dentro `diet/`)
+- `index.html`: cornice dell'app (barra Oggi · Allenamento · Piano · Spesa · Progressi), login Firebase e sincronizzazione dei dati tra dispositivi
+- `diet/`: piano alimentare adattivo con registro pasti (sorgenti in `diet/src`, tabella alimenti in `diet/src/foods.py`; `python3 build.py` dentro `diet/`)
 - `gym/`: scheda palestra A/B/C con schema muscolare
 - `config.js`: configurazione web pubblica di Firebase
 - `firestore.rules`: regole Firestore (ogni utente vede solo i suoi dati, `users/{uid}/state/{diet,gym}`)

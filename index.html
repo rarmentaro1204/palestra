@@ -24,15 +24,11 @@
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.4; overflow: hidden; }
 button { font: inherit; color: inherit; cursor: pointer; }
 [hidden] { display: none !important; }
-body { display: grid; grid-template-rows: auto 1fr; height: 100vh; height: 100dvh; }
-.bar { display: flex; align-items: center; gap: 8px; padding: calc(8px + env(safe-area-inset-top)) 12px 8px; background: var(--bg); border-bottom: 1px solid var(--line); }
-.seg { display: flex; flex: 1; background: var(--surface2); border-radius: 999px; padding: 3px; }
-.seg button { flex: 1; border: 0; background: transparent; padding: 8px 10px; border-radius: 999px; font-weight: 700; font-size: 15px; color: var(--muted); }
-.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
-.acc { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 12px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
-.dot.ok { background: var(--ok); } .dot.bad { background: var(--bad); } .dot.sync { background: var(--accent); animation: pulse 1s infinite; }
-@keyframes pulse { 50% { opacity: .35; } }
+body { display: grid; grid-template-rows: 1fr auto; height: 100vh; height: 100dvh; }
+.tabs { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--surface); border-top: 1px solid var(--line); padding: 2px 4px env(safe-area-inset-bottom); }
+.tabs button { border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 9px; font-size: 11px; font-weight: 600; color: var(--muted); }
+.tabs svg { width: 24px; height: 24px; }
+.tabs button[aria-current="page"] { color: var(--accent); }
 main { position: relative; min-height: 0; }
 iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
 .ov { position: fixed; inset: 0; z-index: 10; background: var(--bg); display: grid; place-items: center; padding: 20px; overflow: auto; }
@@ -51,17 +47,17 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
 </style>
 </head>
 <body>
-<header class="bar">
-  <div class="seg" role="tablist" aria-label="Sezioni">
-    <button type="button" data-v="diet" aria-pressed="true">🍽 Dieta</button>
-    <button type="button" data-v="gym" aria-pressed="false">🏋️ Palestra</button>
-  </div>
-  <button type="button" class="acc" id="acc" aria-label="Account e sincronizzazione"><i class="dot" id="dot"></i><span id="accTxt">Account</span></button>
-</header>
 <main>
   <iframe id="f-diet" title="Dieta" hidden></iframe>
   <iframe id="f-gym" title="Palestra" hidden></iframe>
 </main>
+<nav class="tabs" aria-label="Sezioni">
+  <button type="button" data-r="oggi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>Oggi</button>
+  <button type="button" data-r="allena"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg>Allenamento</button>
+  <button type="button" data-r="piano"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Piano</button>
+  <button type="button" data-r="spesa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h2l2 10h10l2-7H7"/><circle cx="9.5" cy="19" r="1.4"/><circle cx="16.5" cy="19" r="1.4"/></svg>Spesa</button>
+  <button type="button" data-r="progressi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Progressi</button>
+</nav>
 
 <div class="ov" id="login" hidden>
   <form class="card" id="lform" novalidate>
@@ -121,26 +117,46 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
   var be = null, fbAuth = null, user = null, started = false, applied = {}, pushTimer = 0, busy = false, lastOk = 0, view = 'diet', first = true;
 
   /* ---------- stato visivo ---------- */
+  var ARME = window.ARME = { acct: { k: '', l: '' } };
   function status(kind, txt) {
-    $('#dot').className = 'dot ' + (kind || ''); $('#accTxt').textContent = txt;
+    ARME.acct = { k: kind || '', l: user ? String(user.displayName || user.email || '?').trim().charAt(0).toUpperCase() : '' };
+    try { $('#f-diet').contentWindow.ARME_DIET.paint(); } catch (e) {}
     $('#sState').textContent = { ok: 'sincronizzato', sync: 'sincronizzo…', bad: 'offline: i dati restano sul dispositivo' }[kind] || (user ? '—' : 'solo su questo dispositivo');
   }
   function say(el, t, c) { el.textContent = t || ''; el.className = 'msg' + (c ? ' ' + c : ''); }
 
-  /* ---------- navigazione ---------- */
-  function show(v) {
-    if (v !== 'diet' && v !== 'gym') v = 'diet'; view = v; lsSet(VIEW_K, v);
-    ['diet', 'gym'].forEach(function (k) { $('#f-' + k).hidden = !(started && k === v); document.querySelector('[data-v=' + k + ']').setAttribute('aria-pressed', String(k === v)); });
+  /* ---------- navigazione: Oggi · Allenamento · Piano · Spesa · Progressi ---------- */
+  var ROUTES = ['oggi', 'allena', 'piano', 'spesa', 'progressi'], DTAB = { oggi: 'oggi', piano: 'settimana', spesa: 'spesa', progressi: 'analisi' };
+  var NAVOF = { oggi: 'oggi', settimana: 'piano', spesa: 'spesa', analisi: 'progressi' }, route = 'oggi', pendingTab = null;
+  function normRoute(r) { r = { diet: 'oggi', gym: 'allena' }[r] || r; return ROUTES.indexOf(r) >= 0 ? r : 'oggi'; }
+  function markNav(r) { document.querySelectorAll('.tabs button').forEach(function (b) { if (b.dataset.r === r) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }); }
+  function dietSrc() { return 'diet/index.html?embed=1&tab=' + (DTAB[route] || 'oggi'); }
+  function goDiet(t) { try { var w = $('#f-diet').contentWindow; if (w && w.ARME_DIET) { w.ARME_DIET.go(t); return; } } catch (e) {} pendingTab = t; }
+  function show(r) {
+    r = normRoute(r); route = r; view = r === 'allena' ? 'gym' : 'diet'; lsSet(VIEW_K, r); markNav(r);
+    if (!started) return;
+    if (view === 'gym' && !$('#f-gym').getAttribute('src')) $('#f-gym').src = 'gym/index.html';
+    $('#f-diet').hidden = view !== 'diet'; $('#f-gym').hidden = view !== 'gym';
+    if (view === 'diet') goDiet(DTAB[r]);
   }
-  document.querySelectorAll('.seg button').forEach(function (b) { b.addEventListener('click', function () { if (location.hash !== '#' + b.dataset.v) location.hash = b.dataset.v; else show(b.dataset.v); }); });
+  document.querySelectorAll('.tabs button').forEach(function (b) { b.addEventListener('click', function () { if (location.hash !== '#' + b.dataset.r) location.hash = b.dataset.r; else show(b.dataset.r); }); });
   window.addEventListener('hashchange', function () { show(location.hash.slice(1)); });
+  /* la dieta avvisa quando cambia sezione da sola (es. tocca un giorno della settimana) */
+  ARME.tab = function (dt) { var r = NAVOF[dt] || 'oggi'; if (view === 'diet' && r !== route) { route = r; lsSet(VIEW_K, r); markNav(r); try { history.replaceState(null, '', '#' + r); } catch (e) {} } };
+  ARME.openAccount = function () { openAccount(); };
+  $('#f-diet').addEventListener('load', function () { if (pendingTab) { var t = pendingTab; pendingTab = null; goDiet(t); } });
 
   function startApps() {
     if (started) return; started = true;
-    $('#f-diet').src = 'diet/index.html'; $('#f-gym').src = 'gym/index.html';
-    show(location.hash.slice(1) || ls(VIEW_K) || 'diet');
+    route = normRoute(location.hash.slice(1) || ls(VIEW_K) || 'oggi');
+    $('#f-diet').src = dietSrc();
+    show(route);
   }
-  function reloadApp(k) { var f = $('#f-' + k); if (!started) return; try { f.contentWindow.location.reload(); } catch (e) { f.src = f.src; } }
+  function reloadApp(k) {
+    var f = $('#f-' + k); if (!started || !f.getAttribute('src')) return;
+    if (k === 'diet') { f.src = dietSrc(); return; }
+    try { f.contentWindow.location.reload(); } catch (e) { f.src = f.src; }
+  }
   function typing() { try { var d = $('#f-' + view).contentDocument; var a = d && d.activeElement; return a && /INPUT|TEXTAREA/.test(a.tagName) && a.value; } catch (e) { return false; } }
 
   /* ---------- database (Firebase / Firestore): users/{uid}/state/{diet|gym} ---------- */
@@ -278,10 +294,10 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
   $('#loff').addEventListener('click', function () { lsSet(OFF_K, '1'); offlineStart(); });
 
   /* ---------- foglio account ---------- */
-  $('#acc').addEventListener('click', function () {
+  function openAccount() {
     if (!user) { if (fbAuth || (CFG.firebase && CFG.firebase.apiKey)) { try { localStorage.removeItem(OFF_K); } catch (e) {} $('#login').hidden = false; return; } }
     say($('#smsg'), ''); $('#sheet').hidden = false;
-  });
+  }
   $('#sClose').addEventListener('click', function () { $('#sheet').hidden = true; });
   $('#sheet').addEventListener('click', function (e) { if (e.target.id === 'sheet') $('#sheet').hidden = true; });
   $('#sNow').addEventListener('click', function () { say($('#smsg'), ''); syncNow(false).then(function () { if (!$('#smsg').textContent) say($('#smsg'), 'Fatto.', 'ok'); }); });
