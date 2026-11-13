@@ -7,3 +7,6 @@ Sito statico: `index.html` più la cartella `img/`. Nessuna build.
 I dati (serie, carichi, note) sono salvati nel browser del telefono (localStorage). Per non perderli su iPhone aggiungi il sito alla schermata Home.
 
 Foto degli esercizi: [Free Exercise DB](https://github.com/yuhonas/free-exercise-db), pubblico dominio (Unlicense).
+
+## Crediti
+Lo schema muscolare usa i poligoni anatomici di [react-body-highlighter](https://github.com/giavinh79/react-body-highlighter) (MIT, © GV79), derivati da react-native-body-highlighter.
