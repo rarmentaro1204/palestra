@@ -44,6 +44,9 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
 .sheet { position: fixed; inset: 0; z-index: 8; background: rgba(20,15,10,.45); display: grid; align-items: end; justify-items: center; }
 .sheet .card { border-radius: 24px 24px 0 0; max-width: 460px; padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
 .kv { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; } .kv span { color: var(--muted); }
+
+:root.pesca { --bg: #FBEFF2; --surface: #FFFAFB; --surface2: #F5E2E8; --ink: #2B1F23; --muted: #7C6369; --line: #EDD4DB; --accent: #C04A72; }
+@media (prefers-color-scheme: dark) { :root.pesca:not([data-theme="light"]) { --bg: #1B1316; --surface: #251B1F; --surface2: #302328; --ink: #F5E9ED; --muted: #B39CA4; --line: #3D2C33; --accent: #E688A8; } }
 </style>
 </head>
 <body>
