@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Ogni utente legge e scrive solo il proprio stato (dieta e palestra).
+    match /users/{uid}/state/{key} {
+      allow read, write: if request.auth != null && request.auth.uid == uid && key in ['diet', 'gym'];
+    }
+  }
+}

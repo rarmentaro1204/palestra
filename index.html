@@ -75,12 +75,6 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
     <button class="lnk" type="button" id="lforgot">Password dimenticata</button>
     <button class="lnk" type="button" id="loff">Usa solo su questo dispositivo</button>
   </form>
-  <form class="card" id="nform" hidden>
-    <h1>Nuova password</h1><p>Scegli la nuova password (almeno 8 caratteri).</p>
-    <label for="npass">Password</label><input id="npass" type="password" autocomplete="new-password">
-    <p class="msg" id="nmsg" role="status"></p>
-    <button class="btn" type="submit">Salva password</button>
-  </form>
 </div>
 
 <div class="sheet" id="sheet" hidden>
@@ -104,8 +98,8 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
   'use strict';
   var CFG = window.ARME_CFG || {};
   var KEYS = { diet: 'dieta-pb-v3', gym: 'spinta-trazione-braccia-v1' };
-  var META_K = 'arme-sync-meta-v1', VIEW_K = 'arme-view', OFF_K = 'arme-offline';
-  var SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
+  var META_K = 'arme-sync-meta-v2', VIEW_K = 'arme-view', OFF_K = 'arme-offline';
+  var FB = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-';
   var $ = function (s) { return document.querySelector(s); };
   function ls(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -122,7 +116,7 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
     return o;
   }
 
-  var sb = null, user = null, started = false, applied = {}, pushTimer = 0, busy = false, lastOk = 0, view = 'diet';
+  var be = null, fbAuth = null, user = null, started = false, applied = {}, pushTimer = 0, busy = false, lastOk = 0, view = 'diet', first = true;
 
   /* ---------- stato visivo ---------- */
   function status(kind, txt) {
@@ -147,27 +141,41 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
   function reloadApp(k) { var f = $('#f-' + k); if (!started) return; try { f.contentWindow.location.reload(); } catch (e) { f.src = f.src; } }
   function typing() { try { var d = $('#f-' + view).contentDocument; var a = d && d.activeElement; return a && /INPUT|TEXTAREA/.test(a.tagName) && a.value; } catch (e) { return false; } }
 
+  /* ---------- database (Firebase / Firestore): users/{uid}/state/{diet|gym} ---------- */
+  function initBackend() {
+    var app = firebase.initializeApp(CFG.firebase); fbAuth = firebase.auth(); var db = firebase.firestore();
+    var col = function () { return db.collection('users').doc(fbAuth.currentUser.uid).collection('state'); };
+    be = {
+      getAll: function () {
+        return col().get({ source: 'server' }).then(function (snap) {
+          var m = {}; snap.forEach(function (d) { var x = d.data(); m[d.id] = { value: parse(x.value), ts: String(x.updatedAt && x.updatedAt.toMillis ? x.updatedAt.toMillis() : 0) }; }); return m;
+        });
+      },
+      put: function (k, v) {
+        var ref = col().doc(k);
+        return ref.set({ value: JSON.stringify(v), updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
+          .then(function () { return ref.get({ source: 'server' }); }).then(function (d) { return String(d.data().updatedAt.toMillis()); });
+      }
+    };
+  }
+
   /* ---------- sincronizzazione ---------- */
   function raw(k) { return ls(KEYS[k]); }
   function writeLocal(k, val, ts) { var s = JSON.stringify(val); lsSet(KEYS[k], s); meta[k] = { h: hash(s), ts: ts }; saveMeta(); }
   function push(k, valOverride) {
     var s = raw(k); if (s === null) return Promise.resolve();
     var v = valOverride !== undefined ? valOverride : parse(s); if (v === null) return Promise.resolve();
-    return sb.from('app_state').upsert({ key: k, value: v }, { onConflict: 'user_id,key' }).select('updated_at').single().then(function (r) {
-      if (r.error) throw r.error;
-      meta[k] = { h: hash(s), ts: r.data.updated_at }; saveMeta();
-    });
+    var sent = valOverride !== undefined ? JSON.stringify(valOverride) : s;
+    return be.put(k, v).then(function (ts) { meta[k] = { h: hash(sent), ts: ts }; saveMeta(); });
   }
-  function reconcile(isInitial) {
-    return sb.from('app_state').select('key,value,updated_at').then(function (r) {
-      if (r.error) throw r.error;
-      var remote = {}; (r.data || []).forEach(function (x) { remote[x.key] = x; });
+  function reconcile() {
+    return be.getAll().then(function (remote) {
       var jobs = [], changed = [];
       Object.keys(KEYS).forEach(function (k) {
-        var rm = remote[k], loc = raw(k), m = meta[k] || {}, locChanged = loc !== null && hash(loc) !== m.h, remNew = rm && rm.updated_at !== m.ts;
+        var rm = remote[k], loc = raw(k), m = meta[k] || {}, locChanged = loc !== null && hash(loc) !== m.h, remNew = rm && rm.ts !== m.ts;
         if (!rm) { if (loc !== null) jobs.push(push(k)); return; }
-        if (loc === null) { writeLocal(k, rm.value, rm.updated_at); changed.push(k); return; }
-        if (!locChanged && remNew) { writeLocal(k, rm.value, rm.updated_at); changed.push(k); return; }
+        if (loc === null) { writeLocal(k, rm.value, rm.ts); changed.push(k); return; }
+        if (!locChanged && remNew) { writeLocal(k, rm.value, rm.ts); changed.push(k); return; }
         if (locChanged && !remNew) { jobs.push(push(k)); return; }
         if (locChanged && remNew) {
           var merged = merge(rm.value, parse(loc)); lsSet(KEYS[k], JSON.stringify(merged)); changed.push(k);
@@ -178,14 +186,14 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
     });
   }
   function syncNow(isInitial) {
-    if (!sb || !user || busy) return Promise.resolve([]);
+    if (!be || !user || busy) return Promise.resolve([]);
     if (!navigator.onLine) { status('bad', 'Offline'); return Promise.resolve([]); }
     busy = true; status('sync', 'Sincronizzo');
-    return reconcile(isInitial).then(function (changed) {
+    return reconcile().then(function (changed) {
       lastOk = Date.now(); status('ok', 'Sincronizzato');
       if (!isInitial) changed.forEach(function (k) { if (typing() && k === view) { applied[k] = true; } else reloadApp(k); });
       return changed;
-    }, function (e) { status('bad', 'Offline'); say($('#smsg'), 'Sincronizzazione non riuscita: ' + (e && e.message || e), 'err'); return []; })
+    }, function (e) { status('bad', 'Offline'); say($('#smsg'), 'Sincronizzazione non riuscita: ' + nice(e), 'err'); return []; })
       .then(function (c) { busy = false; return c; });
   }
   function scheduleCheck() {
@@ -201,86 +209,72 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
   window.addEventListener('offline', function () { status('bad', 'Offline'); });
 
   /* ---------- accesso ---------- */
-  function setUser(u) {
-    user = u; $('#sEmail').textContent = u ? u.email : '—';
-    status(u ? 'sync' : '', u ? 'Account' : 'Solo qui');
+  function setUser(u) { user = u; $('#sEmail').textContent = u ? u.email : '—'; status(u ? 'sync' : '', u ? 'Account' : 'Solo qui'); }
+  function gotUser(u) {
+    if (user && user.uid === u.uid) return;
+    setUser(u); $('#login').hidden = true; try { localStorage.removeItem(OFF_K); } catch (e) {}
+    syncNow(true).then(function () { startApps(); });
   }
-  function gotSession(session) {
-    if (!session) return;
-    setUser(session.user); $('#login').hidden = true; try { localStorage.removeItem(OFF_K); } catch (e) {}
-    syncNow(true).then(function () { startApps(); if (!started) startApps(); });
-  }
-  function loadSdk() {
-    return new Promise(function (res, rej) {
-      if (window.supabase) return res();
-      var s = document.createElement('script'); s.src = SDK; s.onload = res; s.onerror = function () { rej(new Error('sdk')); }; document.head.appendChild(s);
-    });
+  function loadScripts(list) {
+    return list.reduce(function (p, src) {
+      return p.then(function () { return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = function () { rej(new Error('sdk')); }; document.head.appendChild(s); }); });
+    }, Promise.resolve());
   }
   function offlineStart() { setUser(null); $('#login').hidden = true; status('', 'Solo qui'); startApps(); }
   function boot() {
-    if (!CFG.url || !CFG.key) { if (ls(OFF_K) === '1') return offlineStart(); $('#login').hidden = false; say($('#lmsg'), 'Il collegamento al database non è ancora configurato: puoi usare l’app solo su questo dispositivo.', 'err'); return; }
-    loadSdk().then(function () {
-      sb = window.supabase.createClient(CFG.url, CFG.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-      sb.auth.onAuthStateChange(function (ev, session) {
-        if (ev === 'PASSWORD_RECOVERY') { $('#login').hidden = false; $('#lform').hidden = true; $('#nform').hidden = false; }
-        else if (ev === 'SIGNED_OUT') { setUser(null); }
+    if (!CFG.firebase || !CFG.firebase.apiKey) {
+      if (ls(OFF_K) === '1') return offlineStart();
+      $('#login').hidden = false; say($('#lmsg'), 'Il collegamento al database non è ancora configurato: puoi usare l’app solo su questo dispositivo.', 'err'); return;
+    }
+    (window.firebase ? Promise.resolve() : loadScripts([FB + 'app-compat.js', FB + 'auth-compat.js', FB + 'firestore-compat.js'])).then(function () {
+      initBackend();
+      fbAuth.onAuthStateChanged(function (u) {
+        if (u) { first = false; gotUser(u); return; }
+        user = null; $('#sEmail').textContent = '—';
+        if (first) { first = false; if (ls(OFF_K) === '1') offlineStart(); else $('#login').hidden = false; }
       });
-      return sb.auth.getSession();
-    }).then(function (r) {
-      if (r.data && r.data.session && $('#nform').hidden) gotSession(r.data.session);
-      else if (ls(OFF_K) === '1' && !(r.data && r.data.session)) offlineStart();
-      else if ($('#nform').hidden) $('#login').hidden = false;
     }, function () { offlineStart(); status('bad', 'Offline'); });
   }
   function creds() { return { email: $('#lemail').value.trim(), password: $('#lpass').value }; }
   function nice(e) {
-    var m = String(e && e.message || e);
-    if (/Invalid login/i.test(m)) return 'Email o password non corretti.';
-    if (/not confirmed/i.test(m)) return 'Devi prima confermare l’email: controlla la posta.';
-    if (/already registered/i.test(m)) return 'Questa email è già registrata: usa “Accedi”.';
-    if (/at least|weak|short/i.test(m)) return 'Password troppo corta: almeno 8 caratteri.';
-    if (/signups? (not allowed|disabled)/i.test(m)) return 'Le nuove registrazioni sono disattivate.';
+    var c = e && e.code || '', m = String(e && e.message || e);
+    if (/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c)) return 'Email o password non corretti.';
+    if (/email-already-in-use/.test(c)) return 'Questa email è già registrata: usa “Accedi”.';
+    if (/weak-password/.test(c)) return 'Password troppo corta: almeno 8 caratteri.';
+    if (/invalid-email/.test(c)) return 'Email non valida.';
+    if (/network/.test(c)) return 'Nessuna connessione.';
+    if (/too-many/.test(c)) return 'Troppi tentativi: riprova tra qualche minuto.';
+    if (/permission-denied/.test(c)) return 'Permessi del database non configurati (regole Firestore).';
+    if (/operation-not-allowed/.test(c)) return 'Accesso con email non attivo nel progetto Firebase.';
     return m;
   }
   $('#lform').addEventListener('submit', function (e) {
-    e.preventDefault(); var c = creds(); if (!sb) return;
+    e.preventDefault(); var c = creds(); if (!fbAuth) return;
     if (!c.email || !c.password) return say($('#lmsg'), 'Inserisci email e password.', 'err');
-    say($('#lmsg'), 'Accesso…'); sb.auth.signInWithPassword(c).then(function (r) { if (r.error) return say($('#lmsg'), nice(r.error), 'err'); gotSession(r.data.session); });
+    say($('#lmsg'), 'Accesso…'); fbAuth.signInWithEmailAndPassword(c.email, c.password).then(function () { say($('#lmsg'), ''); }, function (er) { say($('#lmsg'), nice(er), 'err'); });
   });
   $('#lup').addEventListener('click', function () {
-    var c = creds(); if (!sb) return;
+    var c = creds(); if (!fbAuth) return;
     if (!c.email || c.password.length < 8) return say($('#lmsg'), 'Email e password di almeno 8 caratteri.', 'err');
-    say($('#lmsg'), 'Creo l’account…');
-    sb.auth.signUp({ email: c.email, password: c.password, options: { emailRedirectTo: location.origin + location.pathname } }).then(function (r) {
-      if (r.error) return say($('#lmsg'), nice(r.error), 'err');
-      if (r.data.session) gotSession(r.data.session); else say($('#lmsg'), 'Account creato. Conferma l’email dal link che ti ho mandato, poi premi “Accedi”.', 'ok');
-    });
+    say($('#lmsg'), 'Creo l’account…'); fbAuth.createUserWithEmailAndPassword(c.email, c.password).then(function () { say($('#lmsg'), ''); }, function (er) { say($('#lmsg'), nice(er), 'err'); });
   });
   $('#lforgot').addEventListener('click', function () {
-    var em = $('#lemail').value.trim(); if (!sb || !em) return say($('#lmsg'), 'Scrivi la tua email e riprova.', 'err');
-    sb.auth.resetPasswordForEmail(em, { redirectTo: location.origin + location.pathname }).then(function (r) { say($('#lmsg'), r.error ? nice(r.error) : 'Ti ho mandato un’email per scegliere una nuova password.', r.error ? 'err' : 'ok'); });
+    var em = $('#lemail').value.trim(); if (!fbAuth || !em) return say($('#lmsg'), 'Scrivi la tua email e riprova.', 'err');
+    fbAuth.sendPasswordResetEmail(em).then(function () { say($('#lmsg'), 'Ti ho mandato un’email per scegliere una nuova password.', 'ok'); }, function (er) { say($('#lmsg'), nice(er), 'err'); });
   });
   $('#loff').addEventListener('click', function () { lsSet(OFF_K, '1'); offlineStart(); });
-  $('#nform').addEventListener('submit', function (e) {
-    e.preventDefault(); var p = $('#npass').value; if (p.length < 8) return say($('#nmsg'), 'Almeno 8 caratteri.', 'err');
-    sb.auth.updateUser({ password: p }).then(function (r) {
-      if (r.error) return say($('#nmsg'), nice(r.error), 'err');
-      $('#nform').hidden = true; $('#lform').hidden = false; history.replaceState(null, '', location.pathname + location.hash);
-      sb.auth.getSession().then(function (x) { if (x.data.session) gotSession(x.data.session); });
-    });
-  });
 
   /* ---------- foglio account ---------- */
   $('#acc').addEventListener('click', function () {
-    if (!user) { if (sb || CFG.key) { try { localStorage.removeItem(OFF_K); } catch (e) {} $('#login').hidden = false; return; } }
+    if (!user) { if (fbAuth || (CFG.firebase && CFG.firebase.apiKey)) { try { localStorage.removeItem(OFF_K); } catch (e) {} $('#login').hidden = false; return; } }
     say($('#smsg'), ''); $('#sheet').hidden = false;
   });
   $('#sClose').addEventListener('click', function () { $('#sheet').hidden = true; });
   $('#sheet').addEventListener('click', function (e) { if (e.target.id === 'sheet') $('#sheet').hidden = true; });
-  $('#sNow').addEventListener('click', function () { syncNow(false).then(function () { say($('#smsg'), 'Fatto.', 'ok'); }); });
+  $('#sNow').addEventListener('click', function () { say($('#smsg'), ''); syncNow(false).then(function () { if (!$('#smsg').textContent) say($('#smsg'), 'Fatto.', 'ok'); }); });
   $('#sOut').addEventListener('click', function () {
-    if (!sb) return;
-    syncNow(false).then(function () { return sb.auth.signOut(); }).then(function () {
+    if (!fbAuth) return;
+    syncNow(false).then(function () { return fbAuth.signOut(); }).then(function () {
       Object.keys(KEYS).forEach(function (k) { try { localStorage.removeItem(KEYS[k]); } catch (e) {} }); meta = {}; saveMeta(); location.hash = ''; location.reload();
     });
   });
@@ -297,7 +291,7 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
       say($('#smsg'), 'Importato.', 'ok'); syncNow(false).then(function () { Object.keys(KEYS).forEach(reloadApp); });
     });
   });
-  window.__arme = { syncNow: syncNow, meta: function () { return meta; } };
+  window.__arme = { syncNow: syncNow };
   boot();
 })();
 </script>

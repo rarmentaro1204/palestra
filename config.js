@@ -1,6 +1,10 @@
-// Configurazione pubblica di Supabase (la chiave "publishable" è fatta per stare nel browser:
-// la sicurezza è garantita dalle regole RLS in supabase/schema.sql).
+// Configurazione pubblica di Firebase (le chiavi web di Firebase sono fatte per stare nel browser:
+// la sicurezza è garantita dalle regole in firestore.rules).
 window.ARME_CFG = {
-  url: 'https://nxyasdhqoptokfyvuwek.supabase.co',
-  key: ''   // <- incolla qui la chiave "publishable" (Supabase > Settings > API Keys)
+  firebase: {
+    apiKey: '',
+    authDomain: '',
+    projectId: '',
+    appId: ''
+  }
 };
