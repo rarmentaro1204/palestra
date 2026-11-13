@@ -67,10 +67,12 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
   <form class="card" id="lform" novalidate>
     <h1>Arme P&amp;B</h1>
     <p>Dieta e palestra in un’unica app. Accedi per ritrovare i tuoi dati su ogni dispositivo.</p>
+    <button class="btn" type="button" id="lgoogle" style="margin-top:0">Continua con Google</button>
+    <p class="msg" style="text-align:center;margin:12px 0 0 !important">oppure con email e password</p>
     <label for="lemail">Email</label><input id="lemail" type="email" autocomplete="username" inputmode="email">
     <label for="lpass">Password</label><input id="lpass" type="password" autocomplete="current-password">
     <p class="msg" id="lmsg" role="status"></p>
-    <button class="btn" type="submit" id="lin">Accedi</button>
+    <button class="btn sec" type="submit" id="lin">Accedi con email</button>
     <button class="btn sec" type="button" id="lup">Crea account (solo la prima volta)</button>
     <button class="lnk" type="button" id="lforgot">Password dimenticata</button>
     <button class="lnk" type="button" id="loff">Usa solo su questo dispositivo</button>
@@ -242,6 +244,8 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
     if (/email-already-in-use/.test(c)) return 'Questa email è già registrata: usa “Accedi”.';
     if (/weak-password/.test(c)) return 'Password troppo corta: almeno 8 caratteri.';
     if (/invalid-email/.test(c)) return 'Email non valida.';
+    if (/popup-closed|cancelled-popup/.test(c)) return 'Accesso annullato.';
+    if (/unauthorized-domain/.test(c)) return 'Dominio non autorizzato: aggiungi palestraarme.netlify.app in Authentication → Impostazioni → Domini autorizzati.';
     if (/network/.test(c)) return 'Nessuna connessione.';
     if (/too-many/.test(c)) return 'Troppi tentativi: riprova tra qualche minuto.';
     if (/permission-denied/.test(c)) return 'Permessi del database non configurati (regole Firestore).';
@@ -261,6 +265,14 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
   $('#lforgot').addEventListener('click', function () {
     var em = $('#lemail').value.trim(); if (!fbAuth || !em) return say($('#lmsg'), 'Scrivi la tua email e riprova.', 'err');
     fbAuth.sendPasswordResetEmail(em).then(function () { say($('#lmsg'), 'Ti ho mandato un’email per scegliere una nuova password.', 'ok'); }, function (er) { say($('#lmsg'), nice(er), 'err'); });
+  });
+  $('#lgoogle').addEventListener('click', function () {
+    if (!fbAuth) return say($('#lmsg'), 'Collegamento al database non configurato.', 'err');
+    var pr = new firebase.auth.GoogleAuthProvider(); say($('#lmsg'), 'Apro Google…');
+    fbAuth.signInWithPopup(pr).then(function () { say($('#lmsg'), ''); }, function (er) {
+      if (er && /popup-blocked|operation-not-supported/.test(er.code || '')) return fbAuth.signInWithRedirect(pr);
+      say($('#lmsg'), nice(er), 'err');
+    });
   });
   $('#loff').addEventListener('click', function () { lsSet(OFF_K, '1'); offlineStart(); });
 
