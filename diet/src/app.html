@@ -389,7 +389,7 @@ var FOODS = /*FOODS*/;
   var D = DATA, RBY = {};
   RIC.forEach(function (r) { RBY[r.id] = r; });
   var DOW = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
-  var GYM = { 0: 'Giorno A', 2: 'Giorno B', 4: 'Giorno C' }; // lun, mer, ven (scheda palestra)
+  var GYM = { 1: 'Giorno A', 3: 'Giorno B', 4: 'Giorno C' }; // mar, gio, ven (scheda palestra)
   var EMBED = document.documentElement.classList.contains('embed'), GYM_URL = EMBED ? '../#allena' : 'https://palestraarme.netlify.app/#allena';
   var VEG = { R: 'zucchine, spinaci, finocchi, piselli, broccoli, radicchio, carciofi', F: 'zucchine, piselli, spinaci, finocchi' };
   var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
@@ -802,7 +802,7 @@ var FOODS = /*FOODS*/;
         '<li><b>Vomito o diarrea per più di 24 ore</b>, o non riesci a bere: chiama il medico. Disidratazione + Triatec può affaticare i reni.</li>' +
         '<li><b>Creatina:</b> dillo al medico, alza la creatinina negli esami del sangue senza che i reni stiano male.</li></ul></details>';
     } else {
-      h += '<div class="note"><b>Pesce:</b> martedì e venerdì sera, con la stessa verdura di Roberto.</div>';
+      h += '<div class="note"><b>Pesce:</b> lunedì e venerdì sera, con la stessa verdura di Roberto.</div>';
     }
     $('#main').innerHTML = h;
   }
@@ -822,7 +822,7 @@ var FOODS = /*FOODS*/;
       '<div class="bar" style="height:10px;margin:12px 0 8px"><i style="width:' + (pct * 100) + '%;background:var(--ok)"></i></div>' +
       '<p class="gl">−' + r1(done) + ' kg fatti · mancano ' + r1(Math.max(0, P.cur - GOAL.to)) + ' kg in ' + Math.round(P.wl) + ' settimane</p>' +
       '<div class="kvs">' + row('Consumo stimato', eng.tdee + ' kcal/giorno') + row('Ritmo richiesto', r1(P.need) + ' kg/sett.') + row('Ritmo reale', real) + row('Media giornaliera', P.avg + ' kcal') +
-      row('Palestra (lun, mer, ven)', P.day[0] + ' kcal') + row('Mar e gio (riposo)', P.day[1] + ' kcal') + row('Sabato e domenica', WE_KCAL + ' kcal') + (P.eta ? row('Arrivo previsto', P.eta.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })) : '') + '</div>' +
+      row('Palestra (mar, gio, ven)', P.day[1] + ' kcal') + row('Lun e mer (riposo)', P.day[0] + ' kcal') + row('Sabato e domenica', WE_KCAL + ' kcal') + (P.eta ? row('Arrivo previsto', P.eta.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })) : '') + '</div>' +
       (P.warn ? '<p class="gl warn">⚠️ ' + esc(P.warn) + '</p>' : '') +
       '<p class="gl">⚙️ ' + calib + '. Pesati la mattina a digiuno, anche tutti i giorni: conta la tendenza, non il singolo dato. Dopo il weekend da 3000 il lunedì sarai più pesante per acqua e carboidrati: è normale.</p>' +
       '<form class="wf" id="wform"><input id="wkg" type="text" inputmode="decimal" placeholder="Peso di oggi (kg)" aria-label="Peso di oggi in kg"><button class="chipbtn hi" type="submit">Salva</button></form>' +
@@ -923,7 +923,7 @@ var FOODS = /*FOODS*/;
       '<div class="bar" style="height:10px;margin:12px 0 6px"><i style="width:' + (pct * 100) + '%;background:var(--ok)"></i></div>' +
       '<p class="gl">Mancano ' + it(Math.max(0, P.cur - GOAL.to)) + ' kg' + (P.eta ? ' · arrivo previsto ' + P.eta.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) : '') + '</p>' +
       '<form class="wf" id="wform"><input id="wkg" type="text" inputmode="decimal" placeholder="' + (todayW ? 'Oggi ' + it(todayW) + ' kg · puoi correggere' : 'Peso di stamattina (kg)') + '" aria-label="Peso di oggi in kg"><button class="chipbtn hi" type="submit">Salva</button></form>' +
-      '<div class="kcal3"><div><small>Palestra</small><b>' + fmt(P.day[0]) + '</b></div><div><small>Mar e gio</small><b>' + fmt(P.day[1]) + '</b></div><div><small>Weekend</small><b>' + fmt(WE_KCAL) + '</b></div></div>' +
+      '<div class="kcal3"><div><small>Palestra</small><b>' + fmt(P.day[1]) + '</b></div><div><small>Lun e mer</small><b>' + fmt(P.day[0]) + '</b></div><div><small>Weekend</small><b>' + fmt(WE_KCAL) + '</b></div></div>' +
       '<details class="more"><summary>Come calcolo le calorie</summary><div class="kvs">' + row('Consumo stimato', fmt(eng.tdee) + ' kcal/giorno') + row('Ritmo richiesto', it(P.need) + ' kg/sett.') + row('Ritmo reale', real) + row('Media del piano', fmt(P.avg) + ' kcal/giorno') + '</div>' +
       (P.warn ? '<p class="gl warn">⚠️ ' + esc(P.warn) + '</p>' : '') +
       '<p class="gl">Pesati la mattina a digiuno: conta la tendenza, non il singolo giorno. Quando ci sono 2 settimane di pesate ricalcolo il tuo consumo dal peso reale e da quello che hai mangiato: se registri i pasti uso quelli, altrimenti considero il piano rispettato. Dopo il weekend il lunedì sarai più pesante per acqua e carboidrati: è normale.</p></details>' +

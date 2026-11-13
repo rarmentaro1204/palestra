@@ -277,57 +277,57 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
   function MOB() { return { id: 'mob', warm: true, title: 'Riscaldamento mobilità', tag: 'Triset', sets: 2, rest: 30,
       cue: 'Cat cow, circonduzioni anche e braccia: 10-12 ciascuno, poi 30 sec di pausa.',
       ex: [{ id: 'mob', name: 'Cat cow + circonduzioni', fields: [], yt: 'C3i9Rh7PGy4' }] }; }
-  function CARDIO() { return { id: 'cardio', title: 'Cardio a intervalli (facoltativo)', sets: 1, rest: 0, cue: '8-10 minuti a intervalli: 1 minuto forte, 1 minuto facile. Solo se hai tempo.',
-      ex: [{ id: 'cardio', name: 'Cardio', range: '8-10', fields: ['min'] }] }; }
+  function CARDIO() { return { id: 'cardio', title: 'Cardio a intervalli (facoltativo)', sets: 1, rest: 0, cue: '10-15 minuti di cyclette o camminata in salita a un ritmo in cui riesci ancora a parlare. Se hai poco tempo: 8 minuti, 1 minuto forte e 1 facile.',
+      ex: [{ id: 'cardio', name: 'Cardio', range: '10-15', fields: ['min'] }] }; }
   function SS(id, title, sets, rest, cue, a, b) { return { id: id, title: title, tag: 'Superserie', sets: sets, rest: rest, cue: cue, ex: [a, b] }; }
   var DAYS = {
-    A: { name: 'Giorno A', sub: 'Panca, lat, gambe davanti', dow: 1, plan: [
+    A: { name: 'Giorno A', sub: 'Tutto il corpo, pesante', dow: 2, plan: [
       MOB(),
-      SS('a1', 'Panca piana + Lat machine', 3, 120, 'A1 e A2 di fila, poi 2 minuti. Fermati a 1-2 ripetizioni dal cedimento.',
+      SS('a1', 'Panca piana + Lat machine', 3, 90, 'A1 e A2 di fila, poi 90 secondi. Panca a 1-2 ripetizioni dal cedimento; quando fai il massimo delle ripetizioni in tutte le serie, aumenta il carico.',
         { id: 'panca', label: 'A1', name: 'Panca piana bilanciere', range: '6-8', yt: '0cXAp6WhSj4' },
         { id: 'lat', label: 'A2', name: 'Lat machine presa prona', range: '8-10', yt: '02Qci1-0Aao' }),
-      SS('a2', 'Leg press + Leg curl seduto', 3, 120, 'Piedi a metà pedana, scendi finché la schiena resta appoggiata.',
+      SS('a2', 'Leg press + Leg curl seduto', 3, 90, 'Leg press: scendi più in basso che puoi tenendo la schiena appoggiata. Leg curl seduto: busto in avanti, il femorale lavora allungato.',
         { id: 'legpress', label: 'B1', name: 'Leg press', range: '8-12' },
         { id: 'legcurl', label: 'B2', name: 'Leg curl seduto', range: '10-12' }),
-      SS('a3', 'Alzate laterali + Crunch al cavo', 3, 75, 'Alzate senza slancio. Crunch con fermo di 1 sec; ginocchio dolorante: tappetino spesso.',
-        { id: 'lat-raise', label: 'C1', name: 'Alzate laterali ai cavi', range: '12-15', yt: 'ZZYpkGiPcgk' },
-        { id: 'crunch', label: 'C2', name: 'Crunch al cavo alto', range: '10-12', yt: 'Nbgzz8k_m8A' }),
-      SS('a4', 'Curl inclinato + Estensioni sopra la testa', 2, 75, 'Entrambi con il muscolo ben allungato in basso.',
+      SS('a3', 'T-bar + Alzate laterali', 3, 75, 'T-bar: petto appoggiato, tira verso la pancia. Alzate senza slancio, ultima serie fino al cedimento.',
+        { id: 'tbar', label: 'C1', name: 'T-bar', range: '8-12', yt: 'Cp2MJSa4UaE' },
+        { id: 'lat-raise', label: 'C2', name: 'Alzate laterali ai cavi', range: '12-15', yt: 'ZZYpkGiPcgk' }),
+      SS('a4', 'Curl inclinato + Estensioni sopra la testa', 3, 60, 'Muscolo ben allungato in basso. Ultima serie: quando non riesci più a fare ripetizioni complete, aggiungi 3-5 mezze ripetizioni nella parte bassa.',
         { id: 'curl-inc', label: 'D1', name: 'Curl panca inclinata', range: '10-12', yt: 'rAx_tf13V5k' },
         { id: 'tri-over', label: 'D2', name: 'Estensioni sopra la testa', range: '10-12', yt: '09gpiVqdpPM' }),
       CARDIO() ] },
-    B: { name: 'Giorno B', sub: 'Petto alto, rematore, femorali', dow: 3, plan: [
+    B: { name: 'Giorno B', sub: 'Parte alta', dow: 4, plan: [
       MOB(),
-      SS('b1', 'Incline press + T-bar', 3, 120, 'Carico costante su tutte le serie, 1-2 ripetizioni di riserva.',
+      SS('b1', 'Incline press + Lat presa neutra', 3, 90, 'Carico costante su tutte le serie, 1-2 ripetizioni di riserva. Lat al petto con gomiti stretti.',
         { id: 'incline', label: 'A1', name: 'Incline chest press', range: '8-12', yt: 'ocWA1FA6AkI' },
-        { id: 'tbar', label: 'A2', name: 'T-bar', range: '8-12', yt: 'Cp2MJSa4UaE' }),
-      SS('b2', 'Stacco rumeno + Leg extension', 3, 120, 'Stacco: anche indietro, schiena neutra, bilanciere vicino alle gambe.',
-        { id: 'rdl', label: 'B1', name: 'Stacco rumeno', range: '8-10' },
-        { id: 'legext', label: 'B2', name: 'Leg extension', range: '12-15' }),
-      SS('b3', 'Spinte manubri + Face pull', 3, 90, 'Spinte da seduto senza inarcare. Face pull alla fronte, gomiti alti.',
-        { id: 'dbpress', label: 'C1', name: 'Spinte manubri da seduto', range: '8-10' },
+        { id: 'pd-neutral', label: 'A2', name: 'Lat machine presa neutra', range: '10-12' }),
+      SS('b2', 'Spinte manubri + Rematore manubrio', 3, 90, 'Spinte da seduto senza inarcare. Rematore: ripetizioni per braccio, gomito verso l’anca, allunga bene in basso.',
+        { id: 'dbpress', label: 'B1', name: 'Spinte manubri da seduto', range: '8-10' },
+        { id: 'dbrow', label: 'B2', name: 'Rematore manubrio', range: '10-12' }),
+      SS('b3', 'Croci ai cavi + Face pull', 3, 60, 'Croci con gomiti morbidi, apri bene. Face pull alla fronte, gomiti alti.',
+        { id: 'fly', label: 'C1', name: 'Croci ai cavi', range: '12-15' },
         { id: 'facepull', label: 'C2', name: 'Face pull', range: '12-15' }),
-      SS('b4', 'Hammer curl + Pushdown', 2, 75, 'Gomiti fermi ai fianchi in entrambi.',
-        { id: 'hammer', label: 'D1', name: 'Hammer curl', range: '12-15', yt: 'cGCbs0PNvW0' },
-        { id: 'pushdown', label: 'D2', name: 'Pushdown ai cavi', range: '12-15', yt: 'PC6dREPvYlQ' }),
+      SS('b4', 'Alzate laterali + Crunch al cavo', 3, 60, 'Alzate senza slancio. Crunch con fermo di 1 sec; ginocchio dolorante: tappetino spesso.',
+        { id: 'lat-raise', label: 'D1', name: 'Alzate laterali ai cavi', range: '12-15', yt: 'ZZYpkGiPcgk' },
+        { id: 'crunch', label: 'D2', name: 'Crunch al cavo alto', range: '10-12', yt: 'Nbgzz8k_m8A' }),
+      SS('b5', 'Curl EZ + Pushdown', 2, 60, 'Gomiti fermi ai fianchi. Ultima serie fino al cedimento.',
+        { id: 'ezcurl', label: 'E1', name: 'Curl bilanciere EZ', range: '10-12' },
+        { id: 'pushdown', label: 'E2', name: 'Pushdown ai cavi', range: '12-15', yt: 'PC6dREPvYlQ' }),
       CARDIO() ] },
-    C: { name: 'Giorno C', sub: 'Volume, gambe, braccia', dow: 5, plan: [
+    C: { name: 'Giorno C', sub: 'Gambe e braccia', dow: 5, plan: [
       MOB(),
-      SS('c1', 'Lat presa neutra + Croci ai cavi', 3, 90, 'Lat al petto con gomiti stretti. Croci con gomiti morbidi, apri bene.',
-        { id: 'pd-neutral', label: 'A1', name: 'Lat machine presa neutra', range: '10-12' },
-        { id: 'fly', label: 'A2', name: 'Croci ai cavi', range: '12-15' }),
-      SS('c2', 'Split squat + Leg curl sdraiato', 3, 120, 'Split squat: kg per manubrio, ripetizioni per gamba. Ginocchio sopra il piede.',
+      SS('c1', 'Stacco rumeno + Leg extension', 3, 90, 'Stacco: anche indietro, schiena neutra, bilanciere vicino alle gambe, scendi finché senti tirare i femorali.',
+        { id: 'rdl', label: 'A1', name: 'Stacco rumeno', range: '8-10' },
+        { id: 'legext', label: 'A2', name: 'Leg extension', range: '12-15' }),
+      SS('c2', 'Split squat + Leg curl seduto', 3, 90, 'Split squat: kg per manubrio, ripetizioni per gamba, ginocchio sopra il piede, scendi in basso.',
         { id: 'split', label: 'B1', name: 'Split squat manubri', range: '8-10' },
-        { id: 'legcurl-lying', label: 'B2', name: 'Leg curl sdraiato', range: '10-12' }),
-      SS('c3', 'Rematore manubrio + Alzate laterali', 3, 90, 'Rematore: ripetizioni per braccio, gomito verso l’anca.',
-        { id: 'dbrow', label: 'C1', name: 'Rematore manubrio', range: '10-12' },
-        { id: 'lat-raise', label: 'C2', name: 'Alzate laterali ai cavi', range: '12-15', yt: 'ZZYpkGiPcgk' }),
-      SS('c4', 'Curl EZ + French press manubri', 2, 75, 'Curl senza dondolare. French press: manubri ai lati della testa.',
-        { id: 'ezcurl', label: 'D1', name: 'Curl bilanciere EZ', range: '10-12' },
-        { id: 'french', label: 'D2', name: 'French press manubri', range: '10-12' }),
-      SS('c5', 'Reverse crunch + Polpacci', 2, 60, 'Reverse crunch: solleva il bacino, non dondolare. Polpacci alla pressa, pausa in allungamento.',
-        { id: 'revcrunch', label: 'E1', name: 'Reverse crunch', range: '12-15', fields: ['reps'] },
-        { id: 'calf', label: 'E2', name: 'Polpacci alla pressa', range: '12-15' }),
+        { id: 'legcurl', label: 'B2', name: 'Leg curl seduto', range: '10-12' }),
+      SS('c3', 'Hammer curl + French press manubri', 3, 60, 'Hammer: gomiti fermi. French press: manubri ai lati della testa, scendi bene.',
+        { id: 'hammer', label: 'C1', name: 'Hammer curl', range: '12-15', yt: 'cGCbs0PNvW0' },
+        { id: 'french', label: 'C2', name: 'French press manubri', range: '10-12' }),
+      SS('c4', 'Polpacci + Reverse crunch', 3, 60, 'Polpacci alla pressa: 2 secondi di pausa in basso, in allungamento. Reverse crunch: solleva il bacino, non dondolare.',
+        { id: 'calf', label: 'D1', name: 'Polpacci alla pressa', range: '10-15' },
+        { id: 'revcrunch', label: 'D2', name: 'Reverse crunch', range: '12-15', fields: ['reps'] }),
       CARDIO() ] }
   };
   var DAYKEYS = ['A', 'B', 'C'], DAY = 'A', PLAN = DAYS.A.plan, EXMAP = {}, ALLEX = [];
@@ -339,6 +339,7 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
   function setDay(d) { DAY = DAYS[d] ? d : 'A'; PLAN = DAYS[DAY].plan; }
   function suggestDay() {
     var t = state.sessions[TODAY]; if (t && t.day) return t.day;
+    var wd = new Date().getDay(); for (var q = 0; q < DAYKEYS.length; q++) if (DAYS[DAYKEYS[q]].dow === wd) return DAYKEYS[q]; /* mar A, gio B, ven C */
     var ds = Object.keys(state.sessions).filter(function (d) { return d < TODAY && state.sessions[d].day; }).sort().reverse();
     for (var j = 0; j < ds.length; j++) {
       var s = state.sessions[ds[j]];
@@ -663,17 +664,17 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
 
   /* ---------- dieta (da dietapb.netlify.app, edizione Inverno) ---------- */
   var DIET = [
-    { d: 1, n: 'Lunedì', k: 1600, p: 147, m: [['Colazione 10:00', 300, 27], ['Pranzo · legumi', 680, 56], ['Merenda', 170, 4], ['Cena · pollo o tacchino', 450, 60]] },
-    { d: 2, n: 'Martedì', walk: 1, k: 1896, p: 145, m: [['Colazione 10:00', 340, 28.5], ['Pranzo · mozzarella', 795, 61], ['Merenda', 225, 5.2], ['Cena · salmone', 536, 50.5]] },
-    { d: 3, n: 'Mercoledì', k: 1600, p: 143, m: [['Colazione 10:00', 300, 27], ['Pranzo · uova', 670, 54], ['Merenda', 170, 4], ['Cena · carne rossa', 460, 58]] },
-    { d: 4, n: 'Giovedì', walk: 1, k: 1665, p: 128, m: [['Colazione 10:00', 340, 28.5], ['Pranzo · legumi', 680, 56], ['Merenda', 225, 5.2], ['Cena · tofu', 420, 38]] },
+    { d: 2, n: 'Martedì', k: 1600, p: 147, m: [['Colazione 10:00', 300, 27], ['Pranzo · legumi', 680, 56], ['Merenda', 170, 4], ['Cena · pollo o tacchino', 450, 60]] },
+    { d: 1, n: 'Lunedì', walk: 1, k: 1896, p: 145, m: [['Colazione 10:00', 340, 28.5], ['Pranzo · mozzarella', 795, 61], ['Merenda', 225, 5.2], ['Cena · salmone', 536, 50.5]] },
+    { d: 4, n: 'Giovedì', k: 1600, p: 143, m: [['Colazione 10:00', 300, 27], ['Pranzo · uova', 670, 54], ['Merenda', 170, 4], ['Cena · carne rossa', 460, 58]] },
+    { d: 3, n: 'Mercoledì', walk: 1, k: 1665, p: 128, m: [['Colazione 10:00', 340, 28.5], ['Pranzo · legumi', 680, 56], ['Merenda', 225, 5.2], ['Cena · tofu', 420, 38]] },
     { d: 5, n: 'Venerdì', k: 1580, p: 149, m: [['Colazione 10:00', 300, 27], ['Pranzo · mozzarella', 660, 58], ['Merenda', 170, 4], ['Cena · pollo o tacchino', 450, 60]] },
     { d: 6, n: 'Sabato', k: 1590, p: 140, m: [['Colazione 10:00', 300, 27], ['Pranzo · uova', 670, 54], ['Merenda', 170, 4], ['Cena libera', 450, 55]] },
     { d: 0, n: 'Domenica', k: 1615, p: 113, m: [['Colazione · brioche', 320, 6], ['Pranzo libero', 665, 45], ['Merenda', 170, 4], ['Cena · carne rossa', 460, 58]] }
   ];
   function dietHTML() {
     var wd = new Date().getDay();
-    var h = '<div class="dd"><p>Dieta di Roberto, edizione Inverno. Il training è consigliato lunedì, mercoledì e venerdì; martedì e giovedì camminata.</p>' +
+    var h = '<div class="dd"><p>Dieta di Roberto, edizione Inverno. Allenamento martedì, giovedì e venerdì. Tutti i giorni: almeno 8.500 passi.</p>' +
       '<p><b>Integrazione:</b> creatina 3 g ogni giorno con un pasto · omega 3 a pranzo o cena · multivitaminico con un pasto · proteina di soia 25 g a colazione.</p>' +
       '<p>Dopo l’allenamento mangia il pasto proteico più vicino. Quantità e verdure: <a href="../#oggi" target="_top">piano completo</a>.</p></div>';
     DIET.forEach(function (x) {
