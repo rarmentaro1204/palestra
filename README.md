@@ -1,12 +1,12 @@
-# Scheda palestra
+# Arme P&B — dieta e palestra in un'unica app
 
-Scheda "Spinta + Trazione + Braccia" da usare in palestra: un esercizio alla volta, kg e ripetizioni con +/−, recupero automatico con suono e vibrazione, note per esercizio e storico.
+- `index.html`: shell con login Supabase e sincronizzazione dei dati tra dispositivi
+- `diet/`: piano alimentare adattivo (sorgenti in `diet/src`, `python3 build.py` dentro `diet/`)
+- `gym/`: scheda palestra A/B/C con schema muscolare
+- `config.js`: URL e chiave *publishable* di Supabase
+- `supabase/schema.sql`: tabella `app_state` con RLS (ogni utente vede solo i suoi dati)
 
-Sito statico: `index.html` più la cartella `img/`. Nessuna build.
-
-I dati (serie, carichi, note) sono salvati nel browser del telefono (localStorage). Per non perderli su iPhone aggiungi il sito alla schermata Home.
-
-Foto degli esercizi: [Free Exercise DB](https://github.com/yuhonas/free-exercise-db), pubblico dominio (Unlicense).
+Netlify: branch `main`, nessun build command, publish directory `/`.
 
 ## Crediti
-Lo schema muscolare usa i poligoni anatomici di [react-body-highlighter](https://github.com/giavinh79/react-body-highlighter) (MIT, © GV79), derivati da react-native-body-highlighter.
+Lo schema muscolare usa i poligoni di [react-body-highlighter](https://github.com/giavinh79/react-body-highlighter) (MIT, © GV79).
