@@ -451,7 +451,7 @@ var FOODS = /*FOODS*/;
      Le kcal reali le decide il motore adattivo più sotto; qui solo le aggiunte per tipo di giorno. */
   var YOG = { kcal: 81, p: 15.5, f: 0.3, c: 4.5 }, SNACK_GYM = { kcal: 333, p: 29.4, f: 2.4, c: 48 };
   /* weekend: la colazione delle 10 fa anche da primo spuntino (niente spuntino separato) */
-  var WE_COL = [['+ Pane integrale tostato', '50 g', 125, 4.5, 1, 22], ['+ Ricotta', '80 g', 117, 7, 8.8, 2.6], ['+ Miele', '10 g', 30, 0, 0, 8.2], ['+ Frutta secca', '15 g', 92, 2.7, 8, 1.8]];
+  var WE_COL = [['+ Pane integrale tostato', '50 g', 125, 4.5, 1, 22], ['+ Miele', '10 g', 30, 0, 0, 8.2], ['+ Frutta secca', '15 g', 92, 2.7, 8, 1.8]];
   /* merende: versioni calde per l'inverno (indice 0 = originale fredda) */
   var VAR = {
     'R:mer': [null,
@@ -464,9 +464,9 @@ var FOODS = /*FOODS*/;
       { n: 'Porridge proteico caldo', kcal: 259, p: 21.8, f: 4.2, c: 33, items: [['Fiocchi d’avena', '30 g'], ['Latte scremato', '150 ml'], ['Proteina soia GymBeam', '20 g'], ['Cannella', 'q.b.']], hint: 'Avena e latte 3 min sul fuoco o 2 min al microonde, poi la proteina. 1-2 ore prima o subito dopo l’allenamento.' },
       { n: 'Cioccolata calda proteica + banana', kcal: 228, p: 21.7, f: 5.2, c: 23, items: [['Latte di mandorla o scremato, caldo', '200 ml'], ['Cacao amaro', '10 g'], ['Proteina soia GymBeam', '20 g'], ['Banana', '100 g']], hint: '1-2 ore prima o subito dopo l’allenamento.' }],
     'F:spu': [null,
-      { n: 'Ricotta tiepida e mela cotta', kcal: 147, p: 11, f: 4, c: 18, items: [['Ricotta light', '100 g'], ['Mela cotta alla cannella', '100 g'], ['Tisana calda', '1 tazza']] }],
+      { n: 'Mela o pera cotta alla cannella', kcal: 125, p: 0.6, f: 0.3, c: 30, items: [['Mela o pera cotta alla cannella (microonde 3 min)', '150 g'], ['Succo di frutta 100%', '125 ml']] }],
     'F:mer': [null,
-      { n: 'Mela cotta e fette biscottate', kcal: 192, p: 4, f: 5.5, c: 33, items: [['Mela cotta alla cannella', '100 g'], ['Fette biscottate integrali', '25 g'], ['Frutta secca', '6 g'], ['Tè o tisana', '1 tazza']] }]
+      { n: 'Taralli o crackers e pera', kcal: 190, p: 3.4, f: 6, c: 30, items: [['Taralli o crackers integrali', '30 g'], ['Pera o mela con cannella', '120 g'], ['Tè o tisana', '1 tazza']] }]
   };
   function altIdx(k) { var v = (S.alt || {})[k]; return v === undefined ? ({ 'R:mer': 4, 'R:gym': 0 })[k] !== undefined ? ({ 'R:mer': 4, 'R:gym': 0 })[k] : 1 : v; }
   function applyVar(m, who) {
@@ -476,10 +476,13 @@ var FOODS = /*FOODS*/;
     m.items = v.items.map(function (x) { return x.slice(); }); m.kcal = v.kcal; m.p = v.p; m.f = v.f; m.c = v.c; delete m.extra; if (v.hint) m.hint = v.hint; m.warm = true;
     return m;
   }
+  /* proteine in polvere: niente a colazione, la quota si recupera al pomeriggio (merenda) */
   var ADJ = {
-    0: { colActive: true, gym: true },
-    2: { colActive: true, gym: true },
-    4: { colActive: true, gym: true },
+    0: { mer: [['+ Proteina soia GymBeam (shake con acqua o latte)', '25 g', 95, 22, 0.8, 0.5]] },
+    1: { colActive: true, gym: true, mer: [['+ Proteina soia GymBeam (shake con acqua o latte)', '25 g', 95, 22, 0.8, 0.5]] },
+    2: { mer: [['+ Proteina soia GymBeam (shake con acqua o latte)', '25 g', 95, 22, 0.8, 0.5]] },
+    3: { colActive: true, gym: true, mer: [['+ Proteina soia GymBeam (shake con acqua o latte)', '25 g', 95, 22, 0.8, 0.5]] },
+    4: { colActive: true, gym: true, mer: [['+ Proteina soia GymBeam (shake con acqua o latte)', '25 g', 95, 22, 0.8, 0.5]] },
     5: { col: WE_COL, mer: [['+ Proteina soia GymBeam', '20 g', 76, 17.6, 0.6, 0.4]] },
     6: { col: WE_COL, mer: [['+ Proteina soia GymBeam', '30 g', 114, 26.4, 0.9, 0.6]] }
   };
