@@ -469,9 +469,8 @@ var FOODS = /*FOODS*/;
     scaleDay(out, target(who, i));
     var dk = iso(dateOf(i));
     out = out.map(function (m) {
-      if (m.key !== 'pra' && m.key !== 'cen') return m;
-      if (who === 'R' && tripOn(dk, m.key)) return outMeal(m, w);
-      if (who === 'F' && quickOn(dk, m.key)) return quickMeal(m, i);
+      if (who === 'R' && TRIPK.indexOf(m.key) >= 0 && tripOn(dk, m.key)) return outMeal(m, w);
+      if (who === 'F' && QUICKK.indexOf(m.key) >= 0 && quickOn(dk, m.key)) return m.key === 'pra' || m.key === 'cen' ? quickMeal(m, i) : quickSnack(m);
       return m;
     });
     return out;
@@ -479,18 +478,37 @@ var FOODS = /*FOODS*/;
   /* ---------- trasferte di Berto e pasti veloci di Pesca ----------
      S.trip[data] = { pra: 1, cen: 1 }: Berto mangia fuori.
      Per Pesca quel pasto diventa in automatico "veloce" (S.quick[data][pasto] può forzarlo sì/no). */
+  /* in trasferta Berto mangia fuori colazione, pranzo, merenda e cena; Pesca tiene la colazione e ha veloci il resto */
+  var TRIPK = ['col', 'pra', 'mer', 'cen'], QUICKK = ['spu', 'pra', 'mer', 'cen'];
   function tripOn(dk, k) { return !!((S.trip || {})[dk] || {})[k]; }
-  function tripAny(dk) { return tripOn(dk, 'pra') || tripOn(dk, 'cen'); }
-  function quickOn(dk, k) { var q = (S.quick || {})[dk]; if (q && q[k] !== undefined) return !!q[k]; return tripOn(dk, k); }
+  function tripAny(dk) { return TRIPK.some(function (k) { return tripOn(dk, k); }); }
+  function tripAll(dk) { return TRIPK.every(function (k) { return tripOn(dk, k); }); }
+  function quickOn(dk, k) { var q = (S.quick || {})[dk]; if (q && q[k] !== undefined) return !!q[k]; return k === 'pra' || k === 'cen' ? tripOn(dk, k) : tripAny(dk); }
+  function quickSnack(m) {
+    var spu = m.key === 'spu';
+    return { key: m.key, kind: m.kind, time: m.time, quick: true, label: (spu ? 'Spuntino' : 'Merenda') + ' — ⚡ ' + (spu ? 'Frutto e succo da portare' : 'Taralli o crackers e un frutto'),
+      kcal: m.kcal, p: m.p, f: m.f, c: m.c, hint: 'Niente da cuocere: si mette in borsa la mattina.',
+      items: spu ? [['Mela o pera (intera, con un pizzico di cannella se vuoi)', '1 media'], ['Succo di frutta 100% in brick', '125 ml']] : [['Taralli o crackers integrali', m.kcal > 210 ? '40 g' : '30 g'], ['Mela, pera o mandarini', '1 frutto']] };
+  }
   function outMeal(m, w) {
     var k = Math.round(m.kcal / 10) * 10, p = Math.round(m.p / 5) * 5, lc = w.lowc;
-    return { key: m.key, kind: m.kind, time: m.time, out: true, label: (m.key === 'pra' ? 'Pranzo' : 'Cena') + ' — Fuori casa', kcal: m.kcal, p: m.p, f: m.f, c: m.c,
+    var lab = { col: 'Colazione', pra: 'Pranzo', mer: 'Merenda', cen: 'Cena' }[m.key], base = { key: m.key, kind: m.kind, time: m.time, out: true, label: lab + ' — Fuori casa', kcal: m.kcal, p: m.p, f: m.f, c: m.c };
+    if (m.key === 'col') return Object.assign(base, { hint: 'Circa ' + k + ' kcal. Le proteine le recuperi alla merenda.', items: [
+        ['Bar', '', lc ? 'cappuccino senza zucchero + spremuta o un frutto' : 'cappuccino o latte macchiato + cornetto vuoto o integrale'],
+        ['Colazione in hotel', '', lc ? 'yogurt bianco, uova, un frutto; niente pane e dolci' : 'yogurt, un frutto e una fetta di pane o fette biscottate'],
+        ['Da evitare', '', 'cornetti farciti, succhi zuccherati, più di un dolce'] ] });
+    if (m.key === 'mer') return Object.assign(base, { hint: 'Circa ' + k + ' kcal e ' + p + ' g di proteine: è la merenda che ti porta alla quota proteica.', items: [
+        ['Proteine', '', 'barretta proteica (almeno 20 g di proteine) o shake proteico pronto'],
+        ['Oppure', '', 'yogurt greco o skyr da supermercato/autogrill'],
+        ['Con', '', lc ? 'una manciata di mandorle o noci (30 g)' : 'un frutto o una manciata di frutta secca'],
+        ['Da evitare', '', 'snack dolci e salati delle macchinette'] ] });
+    return Object.assign(base, {
       hint: 'Punta a circa ' + k + ' kcal e ' + p + ' g di proteine. Prima la parte proteica, fermati quando sei sazio. Poi segna cosa hai preso con “Ho mangiato altro”.',
       items: [
         ['Ristorante', '', lc ? 'secondo alla griglia (carne, pollo, tagliata) + doppia verdura, niente pane' : 'secondo alla griglia (carne, pollo, tagliata) + verdura + mezza porzione di pane'],
         lc ? ['Oppure', '', 'insalatona con pollo, uova o bresaola, condimento a parte'] : ['Oppure', '', 'primo semplice (pomodoro, ragù) senza secondo + verdura'],
         ['Bar o autogrill', '', lc ? 'insalatona o piatto di bresaola e grana, acqua' : 'piadina o panino con bresaola, pollo o crudo, senza salse, acqua'],
-        ['Da evitare', '', 'fritti, salse, dolce, bibite zuccherate, birra'] ] };
+        ['Da evitare', '', 'fritti, salse, dolce, bibite zuccherate, birra'] ] });
   }
   /* pasti veloci: solo cose della scorta di casa, circa 30 g di proteine a pasto */
   var QUICK = [
@@ -515,11 +533,12 @@ var FOODS = /*FOODS*/;
   function tripHTML(i) {
     var dk = iso(dateOf(i)), past = dk < iso(NOW);
     if (S.who === 'R') {
-      return '<div class="trip"><span>🧳 Trasferta<small>' + (tripAny(dk) ? 'per Pesca pasti veloci in automatico' : 'segna se mangi fuori') + '</small></span>' +
-        '<button type="button" data-trip="pra" aria-pressed="' + tripOn(dk, 'pra') + '"' + (past ? ' disabled' : '') + '>Pranzo fuori</button><button type="button" data-trip="cen" aria-pressed="' + tripOn(dk, 'cen') + '"' + (past ? ' disabled' : '') + '>Cena fuori</button></div>';
+      var on = tripAny(dk);
+      return '<div class="trip"><span>🧳 Trasferta<small>' + (on ? (tripAll(dk) ? 'mangi fuori tutto il giorno' : 'mangi fuori solo alcuni pasti') + ' · per Pesca pasti veloci' : 'colazione, pranzo, merenda e cena fuori casa') + '</small></span>' +
+        '<button type="button" data-tripday="1" aria-pressed="' + on + '"' + (past ? ' disabled' : '') + '>' + (on ? '✓ Sono in trasferta' : 'Sono in trasferta') + '</button></div>';
     }
     if (!tripAny(dk)) return '';
-    return '<div class="trip"><span>🧳 Berto è in trasferta<small>pasti veloci al posto di ' + ['pra', 'cen'].filter(function (k) { return tripOn(dk, k); }).map(function (k) { return k === 'pra' ? 'pranzo' : 'cena'; }).join(' e ') + '</small></span></div>';
+    return '<div class="trip"><span>🧳 Berto è in trasferta<small>colazione normale, spuntini e pasti veloci</small></span></div>';
   }
   /* Revisione nov 2026: Mounjaro 10 mg + Triatec 5 mg, 96 kg -> 80 kg a fine maggio 2027.
      Le kcal reali le decide il motore adattivo più sotto; qui solo le aggiunte per tipo di giorno. */
@@ -902,8 +921,8 @@ var FOODS = /*FOODS*/;
         '<div class="mact"><button type="button" class="act pri" data-log="' + m.key + '">✎ ' + (logged ? 'Modifica' : 'Ho mangiato altro') + '</button>' +
         (pick ? '<button type="button" class="act" data-rec="' + pick.id + '">' + pick.e + ' Ricetta</button>' : '') +
         (m.varKey ? '<button type="button" class="act" data-alt="' + m.varKey + '">🔄 Cambia</button>' : '') +
-        (who === 'F' && (m.key === 'pra' || m.key === 'cen') ? (m.quick ? '<button type="button" class="act" data-qalt="' + m.key + '">🔄 Altro veloce</button><button type="button" class="act" data-quick="' + m.key + '">↩︎ Piano normale</button>' : '<button type="button" class="act" data-quick="' + m.key + '">⚡ Versione veloce</button>') : '') +
-        (who === 'R' && (m.key === 'pra' || m.key === 'cen') ? '<button type="button" class="act" data-trip="' + m.key + '">' + (m.out ? '↩︎ Mangio a casa' : '🍽️ Mangio fuori') + '</button>' : '') +
+        (who === 'F' && QUICKK.indexOf(m.key) >= 0 ? (m.quick ? ((m.key === 'pra' || m.key === 'cen') ? '<button type="button" class="act" data-qalt="' + m.key + '">🔄 Altro veloce</button>' : '') + '<button type="button" class="act" data-quick="' + m.key + '">↩︎ Piano normale</button>' : '<button type="button" class="act" data-quick="' + m.key + '">⚡ Versione veloce</button>') : '') +
+        (who === 'R' && TRIPK.indexOf(m.key) >= 0 ? '<button type="button" class="act" data-trip="' + m.key + '">' + (m.out ? '↩︎ Mangio a casa' : '🍽️ Mangio fuori') + '</button>' : '') +
         (rs.length ? '<button type="button" class="act" data-ideas="' + m.slot + '">💡 Idee (' + rs.length + ')</button>' : '') + '</div></div></article>';
     });
     var xk = sumE(lg.extra).kcal;
@@ -953,9 +972,9 @@ var FOODS = /*FOODS*/;
       var ms = meals(who, i), t = totals(ms), ek = eatenOf(i), nd = ms.filter(function (m) { return ek[m.key] || (logDay(i)[m.key] || []).length; }).length;
       var short = function (m) { var x = m.label.replace(/^(Colazione|Pranzo|Cena|Merenda|Spuntino)\s*—\s*/, '').replace(/\s*\(\+camminata\)/, ''); return /^(Colazione|Merenda|Spuntino)( Tipo [AB])?$/.test(x) ? (m.items[0] ? m.items[0][0] : x) : x; };
       var by = {}; ms.forEach(function (m) { by[m.kind] = m; });
-      var dk = iso(dateOf(i)), tp = (S.trip || {})[dk] || {}, tpl = ['pra', 'cen'].filter(function (k) { return tp[k]; }).map(function (k) { return k === 'pra' ? 'pranzo' : 'cena'; });
+      var dk = iso(dateOf(i)), tp = (S.trip || {})[dk] || {}, tpl = tripAny(dk) ? [tripAll(dk) ? 'tutto il giorno' : TRIPK.filter(function (k) { return tp[k]; }).map(function (k) { return { col: 'colazione', pra: 'pranzo', mer: 'merenda', cen: 'cena' }[k]; }).join(', ')] : [];
       h += '<button type="button" class="wd' + (isToday(i) ? ' today' : '') + (dk < iso(NOW) ? ' past' : '') + '" data-goday="' + i + '"><div class="wh"><h3>' + (isToday(i) ? 'Oggi · ' : '') + w.day + ' ' + dateOf(i).getDate() + '</h3><span class="wk2">' + fmt(t.kcal) + ' kcal' + (who === 'R' && GYM[i] ? ' · 🏋️ ' + GYM[i].replace('Giorno ', '') : '') + (nd ? ' · ✓ ' + nd : '') + '</span></div>' +
-        (tpl.length ? '<div class="trp">🧳 Berto fuori: ' + tpl.join(' e ') + (who === 'F' ? ' · per te pasti veloci' : '') + '</div>' : '') +
+        (tpl.length ? '<div class="trp">🧳 Berto fuori: ' + tpl[0] + (who === 'F' ? ' · per te pasti veloci' : '') + '</div>' : '') +
         '<div class="wl">' + [['Colazione', by.col], ['Pranzo', by.pra], ['Merenda', by.mer], ['Cena', by.cen]].map(function (x) { return '<div><small>' + x[0] + '</small><span>' + esc(x[1] ? short(x[1]) : '—') + '</span></div>'; }).join('') + '</div></button>';
     });
     $('#main').innerHTML = h + '</div>';
@@ -1107,7 +1126,7 @@ var FOODS = /*FOODS*/;
     D.SHOP.forEach(function (c) { c.items.forEach(function (it) { all++; if (S.shop[it[0]]) got++; }); });
     var h = '<div class="sect" style="margin-top:8px"><h2>Lista della spesa</h2><span>per 1 settimana, tutti e due</span></div>' +
       '<div class="prog"><b>' + got + '/' + all + '</b><div class="bar"><i style="width:' + (got / all * 100) + '%;background:var(--ok)"></i></div><span style="font-size:13px;color:var(--muted)">' + (got === all ? 'Fatto! 🎉' : 'nel carrello') + '</span></div>' +
-      (function () { var n = 0; for (var j = 0; j < 7; j++) { var dk = iso(dateOf(j)); if (dk < iso(NOW)) continue; ['pra', 'cen'].forEach(function (k) { if (tripOn(dk, k)) n++; }); } return n ? '<div class="note" style="margin:0 0 12px">🧳 Questa settimana Berto mangia fuori ' + n + (n === 1 ? ' volta' : ' volte') + ': per quei pasti Pesca usa la <b>scorta di casa</b>, quindi puoi comprare un po’ meno carne e verdura fresca.</div>' : ''; })() +
+      (function () { var n = 0; for (var j = 0; j < 7; j++) { var dk = iso(dateOf(j)); if (dk < iso(NOW)) continue; if (tripAny(dk)) n++; } return n ? '<div class="note" style="margin:0 0 12px">🧳 Questa settimana Berto è in trasferta ' + n + (n === 1 ? ' giorno' : ' giorni') + ': in quei giorni Pesca usa la <b>scorta di casa</b>, quindi puoi comprare un po’ meno carne e verdura fresca.</div>' : ''; })() +
       '<div class="tools"><button type="button" class="chipbtn' + (shopHide ? ' hi' : '') + '" id="shopHide">' + (shopHide ? 'Mostra tutto' : 'Nascondi presi') + '</button><button type="button" class="chipbtn" id="shopReset">Nuova spesa</button></div>';
     D.SHOP.forEach(function (c) {
       var n = c.items.filter(function (it) { return S.shop[it[0]]; }).length, items = c.items.filter(function (it) { return !(shopHide && S.shop[it[0]]); });
@@ -1201,7 +1220,8 @@ var FOODS = /*FOODS*/;
   document.addEventListener('click', function (ev) {
     var t = ev.target.closest('button, [data-close]'); if (!t) { if (ev.target.id === 'scrim') closeSheet(); return; }
     var ds = t.dataset;
-    if (ds.trip) { var td = iso(dateOf(sel)); S.trip = S.trip || {}; var tt = S.trip[td] = S.trip[td] || {}; if (tt[ds.trip]) delete tt[ds.trip]; else tt[ds.trip] = 1; if (!Object.keys(tt).length) delete S.trip[td]; save(); toast(tt[ds.trip] ? (ds.trip === 'pra' ? 'Pranzo' : 'Cena') + ' fuori: per Pesca pasto veloce' : 'Tolto'); return render(); }
+    if (ds.trip) { var td = iso(dateOf(sel)); S.trip = S.trip || {}; var tt = S.trip[td] = S.trip[td] || {}; if (tt[ds.trip]) delete tt[ds.trip]; else tt[ds.trip] = 1; if (!Object.keys(tt).length) delete S.trip[td]; save(); toast(tt[ds.trip] ? 'Mangi fuori' : 'Mangi a casa'); return render(); }
+    if (ds.tripday) { var dd = iso(dateOf(sel)); S.trip = S.trip || {}; if (tripAny(dd)) { delete S.trip[dd]; toast('Trasferta tolta'); } else { S.trip[dd] = { col: 1, pra: 1, mer: 1, cen: 1 }; toast('Trasferta segnata: per Pesca pasti veloci'); } save(); return render(); }
     if (ds.quick) { var qd = iso(dateOf(sel)); S.quick = S.quick || {}; var qq = S.quick[qd] = S.quick[qd] || {}; qq[ds.quick] = !quickOn(qd, ds.quick); save(); return render(); }
     if (ds.qalt) { var ad = iso(dateOf(sel)) + ds.qalt; S.qalt = S.qalt || {}; S.qalt[ad] = (S.qalt[ad] || 0) + 1; save(); return render(); }
     if (ds.close !== undefined) { LG = null; return closeSheet(); }
