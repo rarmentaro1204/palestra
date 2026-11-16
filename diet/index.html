@@ -51,7 +51,10 @@ h1, h2, h3 { margin: 0; }
 .wnav .back { width: auto; padding: 0 12px; font-size: 12px; font-weight: 600; color: var(--accent); }
 .dchip .di.t::after { content: '🧳'; font-size: 10px; }
 .trip { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; margin: 0 0 12px; }
-.trip > span { font-size: 13px; font-weight: 600; flex: 1 1 100%; }
+.trip > span { font-size: 13px; font-weight: 600; flex: 1 1 auto; }
+.trip .tday { flex: 0 0 auto; }
+.tks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; flex: 1 1 100%; }
+.trip .tk { padding: 8px 2px; font-size: 12px; white-space: nowrap; }
 .trip > span small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
 .trip button { flex: 1; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 7px 12px; font-size: 13px; font-weight: 600; }
 .trip button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink, #fff); }
@@ -534,11 +537,14 @@ var FOODS = [["Pasta di semola (cruda)",353,10.9,79,1.4,80,"1 porzione","g"],["P
     var dk = iso(dateOf(i)), past = dk < iso(NOW);
     if (S.who === 'R') {
       var on = tripAny(dk);
-      return '<div class="trip"><span>🧳 Trasferta<small>' + (on ? (tripAll(dk) ? 'mangi fuori tutto il giorno' : 'mangi fuori solo alcuni pasti') + ' · per Pesca pasti veloci' : 'colazione, pranzo, merenda e cena fuori casa') + '</small></span>' +
-        '<button type="button" data-tripday="1" aria-pressed="' + on + '"' + (past ? ' disabled' : '') + '>' + (on ? '✓ Sono in trasferta' : 'Sono in trasferta') + '</button></div>';
+      var dis = past ? ' disabled' : '';
+      return '<div class="trip"><span>🧳 Dove mangi<small>' + (on ? (tripAll(dk) ? 'fuori tutto il giorno' : 'fuori solo i pasti evidenziati') + ' · per Pesca pasti veloci' : 'tutto a casa · evidenzia i pasti che fai fuori') + '</small></span>' +
+        '<button type="button" class="tday" data-tripday="1" aria-pressed="' + tripAll(dk) + '"' + dis + '>🧳 Trasferta</button>' +
+        '<div class="tks" role="group" aria-label="Pasti fuori casa">' + TRIPK.map(function (k) { return '<button type="button" class="tk" data-trip="' + k + '" aria-pressed="' + tripOn(dk, k) + '"' + dis + '>' + { col: 'Colazione', pra: 'Pranzo', mer: 'Merenda', cen: 'Cena' }[k] + '</button>'; }).join('') + '</div></div>';
     }
     if (!tripAny(dk)) return '';
-    return '<div class="trip"><span>🧳 Berto è in trasferta<small>colazione normale, spuntini e pasti veloci</small></span></div>';
+    var qk = QUICKK.filter(function (k) { return quickOn(dk, k); }).map(function (k) { return { spu: 'spuntino', pra: 'pranzo', mer: 'merenda', cen: 'cena' }[k]; });
+    return '<div class="trip"><span>🧳 Berto mangia fuori<small>' + (qk.length ? 'per te veloci: ' + qk.join(', ') : 'per te il piano normale') + '</small></span></div>';
   }
   /* Revisione nov 2026: Mounjaro 10 mg + Triatec 5 mg, 96 kg -> 80 kg a fine maggio 2027.
      Le kcal reali le decide il motore adattivo più sotto; qui solo le aggiunte per tipo di giorno. */
@@ -1221,7 +1227,7 @@ var FOODS = [["Pasta di semola (cruda)",353,10.9,79,1.4,80,"1 porzione","g"],["P
     var t = ev.target.closest('button, [data-close]'); if (!t) { if (ev.target.id === 'scrim') closeSheet(); return; }
     var ds = t.dataset;
     if (ds.trip) { var td = iso(dateOf(sel)); S.trip = S.trip || {}; var tt = S.trip[td] = S.trip[td] || {}; if (tt[ds.trip]) delete tt[ds.trip]; else tt[ds.trip] = 1; if (!Object.keys(tt).length) delete S.trip[td]; save(); toast(tt[ds.trip] ? 'Mangi fuori' : 'Mangi a casa'); return render(); }
-    if (ds.tripday) { var dd = iso(dateOf(sel)); S.trip = S.trip || {}; if (tripAny(dd)) { delete S.trip[dd]; toast('Trasferta tolta'); } else { S.trip[dd] = { col: 1, pra: 1, mer: 1, cen: 1 }; toast('Trasferta segnata: per Pesca pasti veloci'); } save(); return render(); }
+    if (ds.tripday) { var dd = iso(dateOf(sel)); S.trip = S.trip || {}; if (tripAll(dd)) { delete S.trip[dd]; toast('Trasferta tolta'); } else { S.trip[dd] = { col: 1, pra: 1, mer: 1, cen: 1 }; toast('Trasferta segnata: per Pesca pasti veloci'); } save(); return render(); }
     if (ds.quick) { var qd = iso(dateOf(sel)); S.quick = S.quick || {}; var qq = S.quick[qd] = S.quick[qd] || {}; qq[ds.quick] = !quickOn(qd, ds.quick); save(); return render(); }
     if (ds.qalt) { var ad = iso(dateOf(sel)) + ds.qalt; S.qalt = S.qalt || {}; S.qalt[ad] = (S.qalt[ad] || 0) + 1; save(); return render(); }
     if (ds.close !== undefined) { LG = null; return closeSheet(); }
