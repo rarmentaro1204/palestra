@@ -10,6 +10,7 @@ Netlify: branch `main`, nessun build command, publish directory `/`.
 
 ## Crediti
 Lo schema muscolare usa i poligoni di [react-body-highlighter](https://github.com/giavinh79/react-body-highlighter) (MIT, © GV79).
+Le foto degli esercizi nuovi (chest press, panca inclinata manubri, rotazioni esterne, Pallof press, pulley, farmer walk) vengono da [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (Unlicense, pubblico dominio).
 
 ## Notifiche del cronometro
 
