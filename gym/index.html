@@ -371,7 +371,7 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
   var cur = { b: 0, i: 0, k: 0 };
 
   function loadLocal() { try { var r = JSON.parse(localStorage.getItem(LS) || 'null'); if (r) { state.sessions = r.sessions || {}; state.notes = r.notes || {}; state.clips = r.clips || {}; } } catch (e) {} }
-  function saveLocal() { try { localStorage.setItem(LS, JSON.stringify({ sessions: state.sessions, notes: state.notes, clips: state.clips })); } catch (e) {} }
+  function saveLocal() { try { localStorage.setItem(LS, JSON.stringify({ sessions: state.sessions, notes: state.notes, clips: state.clips, timer: state.timer || null })); } catch (e) {} }
   function sess() { return state.sessions[TODAY] || (state.sessions[TODAY] = { date: TODAY, sets: {} }); }
   function rows(e) { var s = sess(), a = s.sets[e.id] || (s.sets[e.id] = []); while (a.length < e.block.sets) a.push({}); return a; }
   function lastDone(e) {
@@ -742,7 +742,7 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
     if (T.st !== 'run') return;
     var left = (T.end - Date.now()) / 1000;
     if (left <= 3.05 && left > 0 && !T.warned) { T.warned = true; beep(660, 0, .12); }
-    if (left <= 2 && T.pushed && document.visibilityState === 'visible') { T.pushed = false; pushStop(); } /* sei sull'app: basta il suono */
+    if (left <= 6 && T.pushed && document.visibilityState === 'visible') { T.pushed = false; pushStop(); } /* sei sull'app: basta il suono (l'annullamento arriva a Firestore in pochi secondi) */
     if (left <= 0) {
       clearInterval(T.iv); T.iv = 0; T.st = 'done';
       beep(880, 0, .18); beep(880, .28, .18); beep(1175, .56, .45);
@@ -753,8 +753,8 @@ details.notes textarea:focus { border-color: var(--accent); outline: none; }
   }
   /* notifica sul telefono a fine recupero: la programma la pagina principale (index.html) */
   function PT() { try { return parent !== window && parent.ARME ? parent.ARME : null; } catch (e) { return null; } }
-  function pushStart(sec) { var A = PT(); if (A && A.timer) A.timer.start(sec, describeStep()); }
-  function pushStop() { var A = PT(); if (A && A.timer) A.timer.stop(); }
+  function pushStart(sec) { var A = PT(); if (!A || !A.timer) return; state.timer = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); saveLocal(); A.timer.start(sec, describeStep(), state.timer); }
+  function pushStop() { if (!state.timer) return; state.timer = null; saveLocal(); }
   function paintBell() { var A = PT(), b = $('#tbell'); if (!b) return; var st = A && A.push ? A.push.state() : 'no'; b.hidden = st === 'on' || st === 'no'; }
   function startTimer(sec) {
     initAudio(); wake(); clearInterval(T.iv);

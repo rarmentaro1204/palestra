@@ -14,6 +14,5 @@ Lo schema muscolare usa i poligoni di [react-body-highlighter](https://github.co
 ## Notifiche del cronometro
 
 - `sw.js` (service worker) mostra la notifica; `manifest.webmanifest` e le icone permettono di aggiungere l'app alla schermata Home (su iPhone le notifiche web funzionano solo così).
-- `netlify/functions/timer.mjs` è una funzione in background: riceve la subscription e i secondi del recupero, aspetta e manda la push con `web-push`.
-- `netlify/functions/timer-cancel.mjs` segna un cronometro fermato (Netlify Blobs) così la push non parte.
+- `netlify/functions/timer.mjs` è una funzione in background senza dipendenze: riceve la subscription e i secondi del recupero, aspetta, controlla su Firestore (documento `gym`, campo `timer`) che il cronometro non sia stato saltato o cambiato e manda la push (Web Push cifrata aes128gcm + VAPID, solo `node:crypto`).
 - Variabili d'ambiente su Netlify: `VAPID_PUBLIC`, `VAPID_PRIVATE` (segreta).

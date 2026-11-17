@@ -368,16 +368,17 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
   }
   $('#sPush').addEventListener('click', enablePush);
   ARME.push = { state: pushState, enable: function () { openAccount(); return enablePush(); } };
+  /* la funzione, prima di mandare la push, controlla su Firestore che l'id sia ancora quello del cronometro attivo
+     (la palestra lo salva nel suo stato: se salti o cambi il recupero, l'id cambia e la vecchia notifica non parte) */
   ARME.timer = {
-    start: function (sec, body) {
-      this.stop(); if (!PU.sub || !(sec > 3)) return;
-      var id = Date.now().toString(36) + Math.random().toString(36).slice(2, 10); PU.cur = id;
-      fetch('/api/timer', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sub: PU.sub, id: id, ms: Math.round(sec * 1000), title: '⏱ Recupero finito', body: body || 'Vai con la prossima serie' }) }).catch(function () {});
+    start: function (sec, body, id) {
+      if (!PU.sub || !(sec > 3) || !id) return;
+      var t0 = Date.now(), u = fbAuth && fbAuth.currentUser;
+      (u && u.getIdToken ? Promise.resolve().then(function () { return u.getIdToken(); }).catch(function () { return ""; }) : Promise.resolve("")).then(function (tok) {
+        fetch('/api/timer', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sub: PU.sub, id: id, ms: Math.round(sec * 1000 - (Date.now() - t0)), uid: u ? u.uid : '', token: tok, title: '⏱ Recupero finito', body: body || 'Vai con la prossima serie' }) }).catch(function () {});
+      });
     },
-    stop: function () {
-      if (!PU.cur) return; var id = PU.cur; PU.cur = null;
-      fetch('/api/timer-cancel', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: id }) }).catch(function () {});
-    }
+    stop: function () {}
   };
 
   window.__arme = { syncNow: syncNow };
