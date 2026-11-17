@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F6F1E9">
 <title>Arme P&amp;B</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-title" content="Arme P&amp;B">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -83,7 +86,10 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
     <h1 id="stt" style="font-size:22px">Account</h1>
     <div class="kv"><span>Accesso</span><b id="sEmail">—</b></div>
     <div class="kv"><span>Stato</span><b id="sState">—</b></div>
-    <button class="btn" type="button" id="sNow">Sincronizza adesso</button>
+    <div class="kv"><span>Notifiche cronometro</span><b id="sPushSt">—</b></div>
+    <button class="btn" type="button" id="sPush">🔔 Attiva notifiche del cronometro</button>
+    <p class="msg" id="pmsg" role="status"></p>
+    <button class="btn sec" type="button" id="sNow">Sincronizza adesso</button>
     <button class="btn sec" type="button" id="sExp">Scarica backup dei dati</button>
     <button class="btn sec" type="button" id="sImp">Importa backup</button>
     <input type="file" id="sFile" accept="application/json,.json" hidden>
@@ -323,6 +329,57 @@ iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; bac
       say($('#smsg'), 'Importato.', 'ok'); syncNow(false).then(function () { Object.keys(KEYS).forEach(reloadApp); });
     });
   });
+
+  /* ---------- notifiche del cronometro (push) ----------
+     Il telefono riceve la notifica anche a schermo bloccato: una funzione Netlify aspetta i secondi
+     del recupero e poi manda la push. Su iPhone serve aprire l'app dall'icona sulla schermata Home. */
+  var VAPID = 'BKwhZXK-C2hglVNxJK4cjLenEoDs9XhpU3HRRFAG79-BVnTZ0XDB_2r845Sb1Sk4af9M5WbZHj0hyhQSvhKQU9A';
+  var PU = { reg: null, sub: null, cur: null };
+  function u8(b) { var p = '='.repeat((4 - b.length % 4) % 4), r = atob((b + p).replace(/-/g, '+').replace(/_/g, '/')), o = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) o[i] = r.charCodeAt(i); return o; }
+  function isIOS() { return /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+  function standalone() { return window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches); }
+  function pushState() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !window.Notification) return isIOS() && !standalone() ? 'home' : 'no';
+    if (Notification.permission === 'denied') return 'denied';
+    return PU.sub ? 'on' : 'off';
+  }
+  var PTXT = { on: 'attive', off: 'spente', home: 'serve l’app sulla Home', denied: 'bloccate', no: 'non disponibili qui' };
+  function paintPush() {
+    var st = pushState(), b = $('#sPush'); if (!b) return;
+    $('#sPushSt').textContent = PTXT[st];
+    b.hidden = st === 'on' || st === 'no';
+    b.textContent = st === 'home' ? '🔔 Come attivarle su iPhone' : '🔔 Attiva notifiche del cronometro';
+  }
+  function enablePush() {
+    var st = pushState();
+    if (st === 'home') { say($('#pmsg'), 'Su iPhone: apri questa pagina in Safari, tocca Condividi (il quadrato con la freccia) → “Aggiungi alla schermata Home”. Poi apri l’app dall’icona, vai su Account e attiva le notifiche.', 'ok'); return Promise.resolve(st); }
+    if (st === 'denied') { say($('#pmsg'), 'Le notifiche sono bloccate: riattivale da Impostazioni → Notifiche → Arme P&B.', 'err'); return Promise.resolve(st); }
+    if (st === 'no') { say($('#pmsg'), 'Questo browser non supporta le notifiche.', 'err'); return Promise.resolve(st); }
+    return Notification.requestPermission().then(function (p) {
+      if (p !== 'granted') { paintPush(); return pushState(); }
+      return (PU.reg ? Promise.resolve(PU.reg) : navigator.serviceWorker.ready).then(function (r) {
+        PU.reg = r; return r.pushManager.getSubscription().then(function (s) { return s || r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(VAPID) }); });
+      }).then(function (s) { PU.sub = s.toJSON(); paintPush(); say($('#pmsg'), 'Fatto: a fine recupero ti arriva la notifica anche a schermo bloccato.', 'ok'); return 'on'; });
+    }).catch(function (e) { say($('#pmsg'), 'Non sono riuscito ad attivarle: ' + (e && e.message || e), 'err'); return pushState(); });
+  }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(function (r) { PU.reg = r; return r.pushManager ? r.pushManager.getSubscription() : null; })
+      .then(function (s) { PU.sub = s ? s.toJSON() : null; paintPush(); }).catch(function () { paintPush(); });
+  }
+  $('#sPush').addEventListener('click', enablePush);
+  ARME.push = { state: pushState, enable: function () { openAccount(); return enablePush(); } };
+  ARME.timer = {
+    start: function (sec, body) {
+      this.stop(); if (!PU.sub || !(sec > 3)) return;
+      var id = Date.now().toString(36) + Math.random().toString(36).slice(2, 10); PU.cur = id;
+      fetch('/api/timer', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sub: PU.sub, id: id, ms: Math.round(sec * 1000), title: '⏱ Recupero finito', body: body || 'Vai con la prossima serie' }) }).catch(function () {});
+    },
+    stop: function () {
+      if (!PU.cur) return; var id = PU.cur; PU.cur = null;
+      fetch('/api/timer-cancel', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: id }) }).catch(function () {});
+    }
+  };
+
   window.__arme = { syncNow: syncNow };
   boot();
 })();

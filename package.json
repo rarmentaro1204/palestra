@@ -1,0 +1,10 @@
+{
+  "name": "palestra",
+  "private": true,
+  "type": "module",
+  "description": "Dieta e palestra di Berto e Pesca. Le dipendenze servono solo alle funzioni Netlify (notifiche del cronometro).",
+  "dependencies": {
+    "@netlify/blobs": "^8.2.0",
+    "web-push": "^3.6.7"
+  }
+}
