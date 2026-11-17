@@ -1,0 +1,10 @@
+[build]
+  publish = "."
+
+[build.environment]
+  # La chiave web di Firebase in config.js è pubblica per progetto (la protezione la fanno le regole di Firestore):
+  # la segnalo come valore atteso, altrimenti la scansione dei segreti di Netlify blocca il deploy.
+  SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "AIzaSyD5WZRdVH0S0oOLqBkwJlcC5MHeUGq4ftg"
+
+[functions]
+  directory = "netlify/functions"
