@@ -372,6 +372,10 @@ h1, h2, h3 { margin: 0; }
   --accent: #E688A8; --p: #E688A8; --f: #9EA9D9; --col: #D79AB0; --pra: #B48BC4; --mer: #D9A5B8; --cen: #96A4D4; }
   :root.pesca:not([data-theme="light"]) .ctx a, :root.pesca:not([data-theme="light"]) .tag.gym { background: #3B2229; color: #F3B7CB; } }
 :root.pesca[data-theme="dark"] { --bg: #1B1316; --surface: #251B1F; --surface2: #302328; --ink: #F5E9ED; --muted: #B39CA4; --line: #3D2C33; --accent: #E688A8; --p: #E688A8; }
+
+.src { margin: 14px 0 0; font-size: 13px; color: var(--muted); }
+.src a { color: var(--accent); font-weight: 600; }
+.trip.gymc .tday[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 </style>
 </head>
 <body>
@@ -417,7 +421,19 @@ var FOODS = /*FOODS*/;
   var D = DATA, RBY = {};
   RIC.forEach(function (r) { RBY[r.id] = r; });
   var DOW = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
-  var GYM = { 1: 'Giorno A', 3: 'Giorno B', 4: 'Giorno C' }; // mar, gio, ven (scheda palestra)
+  /* giorni di palestra: di base martedì, giovedì e venerdì; Berto li può cambiare giorno per giorno.
+     Conta anche un allenamento registrato nella scheda palestra (stesso dispositivo).
+     Le lettere A, B, C vanno in ordine sui giorni di palestra della settimana. */
+  var GYM_DEF = { 1: 1, 3: 1, 4: 1 }, GYM_KEY = 'spinta-trazione-braccia-v1';
+  function gymLog() { try { return (JSON.parse(localStorage.getItem(GYM_KEY) || '{}').sessions) || {}; } catch (e) { return {}; } }
+  function gymDone(dk) { var s = gymLog()[dk]; if (!s) return false; return Object.keys(s.sets || {}).some(function (k) { return (s.sets[k] || []).some(function (x) { return x && x.done; }); }); }
+  function isGymDate(dk, i) { var g = (S.gymDays || {})[dk]; if (g !== undefined) return !!g; if (gymDone(dk)) return true; return !!GYM_DEF[i]; }
+  function isGym(i) { return isGymDate(iso(dateOf(i)), i); }
+  function gymLetter(i) {
+    var s = gymLog()[iso(dateOf(i))]; if (s && s.day && gymDone(iso(dateOf(i)))) return s.day;
+    var k = 0; for (var j = 0; j < i; j++) if (isGym(j)) k++; return 'ABC'[k % 3];
+  }
+  function gymCount() { var n = 0; for (var j = 0; j < 7; j++) if (isGym(j)) n++; return n; }
   var EMBED = document.documentElement.classList.contains('embed'), GYM_URL = EMBED ? '../#allena' : 'https://palestraarme.netlify.app/#allena';
   var VEG = { R: 'zucchine, spinaci, finocchi, piselli, broccoli, radicchio, carciofi', F: 'zucchine, piselli, spinaci, finocchi' };
   var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
@@ -454,17 +470,17 @@ var FOODS = /*FOODS*/;
   function meals(who, i) {
     var w = D.WEEK[i], out = [];
     if (who === 'R') {
-      var col = cloneM(D.COL_R[w.colR]); col.key = 'col'; col.kind = 'col'; col.slot = null; out.push(col);
-      var pr = cloneM((w.active && D.PRA_R_ACT[w.praRk]) || D.PRA_R[w.praRk]); pr.time = '12:30'; pr.key = 'pra'; pr.kind = 'pra'; pr.slot = w.praRk === 'prcL' ? 'praL' : null;
+      var col = cloneM(D.COL_R[w.colR]); col.key = 'col'; col.kind = 'col'; col.slot = /base|active/.test(w.colR) ? 'colR' : null; out.push(col);
+      var pr = cloneM((w.active && D.PRA_R_ACT[w.praRk]) || D.PRA_R[w.praRk]); pr.time = '12:30'; pr.key = 'pra'; pr.kind = 'pra'; pr.slot = { pastaTacchino: 'praPasta', lcUova: 'praUova', risoPollo: 'praRiso', lcPollo: 'cenPol', prcL: 'praL', pastaRagu: 'praRagu' }[w.praRk] || null;
       pr.label = pr.label.replace(/^Pranzo 12:30 — /, 'Pranzo — '); out.push(pr);
-      var me = cloneM(w.lowc ? D.MER_R_LC : D.MER_R); me.key = 'mer'; me.kind = 'mer'; if (w.lowc) me.fixed = true; if (w.active) addEx(me, D.MER_R.exAct); delete me.exAct; out.push(me);
+      var lc = w.lowc && !isGym(i), me = cloneM(lc ? D.MER_R_LC : D.MER_R); me.key = 'mer'; me.kind = 'mer'; if (lc) me.fixed = true; if (w.active) addEx(me, D.MER_R.exAct); delete me.exAct; out.push(me);
       var ce = cloneM(D.CEN_R[w.cenR]); ce.key = 'cen'; ce.kind = 'cen'; ce.slot = w.cenR === 'cenLib' ? null : w.cenR; ce.cid = w.cenR; if (w.fishF) ce.hint = 'Pesca stasera: ' + w.fishF.toLowerCase() + ', con la stessa verdura.'; if (w.active) addEx(ce, D.CEN_R[w.cenR].exAct); delete ce.exAct; out.push(ce);
     } else {
       var c2 = cloneM(D.COL_F[w.colFk]); c2.key = 'col'; c2.kind = 'col'; c2.slot = 'colF'; out.push(c2);
       var s2 = cloneM(D.SPU_F); s2.key = 'spu'; s2.kind = 'mer'; out.push(s2);
-      var p2 = cloneM(w.praFm); p2.key = 'pra'; p2.kind = 'pra'; p2.slot = p2.slot || null; out.push(p2);
+      var p2 = cloneM(w.praFm); p2.key = 'pra'; p2.kind = 'pra'; p2.slot = { pasta: 'praFPasta', pasta2: 'praFPasta', riso: 'praFRiso', legumi: 'praL' }[w.praFk] || null; out.push(p2);
       var m2 = cloneM(D.MER_F); m2.key = 'mer'; m2.kind = 'mer'; out.push(m2);
-      var e2 = cloneM(w.cenFm); e2.key = 'cen'; e2.kind = 'cen'; e2.slot = e2.slot || null; e2.cid = w.cenR; out.push(e2);
+      var e2 = cloneM(w.cenFm); e2.key = 'cen'; e2.kind = 'cen'; e2.slot = w.fishF ? 'cenSal' : ({ cenPol: 'cenPol', cenPolp: 'cenPolp', cenPass: 'cenFPass', cenSal: 'cenSal' }[w.cenF] || null); e2.cid = w.cenR; out.push(e2);
     }
     out.forEach(function (m) { if (m.key !== 'gym' && !m.fixed) applyVar(m, who); });
     if (who === 'R') { out = applyAdj(out, i); out.forEach(function (m) { if (m.key === 'gym') applyVar(m, who); }); }
@@ -533,6 +549,12 @@ var FOODS = /*FOODS*/;
     return { key: m.key, kind: m.kind, time: m.time, quick: true, label: (m.key === 'pra' ? 'Pranzo' : 'Cena') + ' — ⚡ ' + Q.n, kcal: m.kcal, p: Q.p * r, f: Q.f * r, c: Q.c * r,
       hint: Q.t + ' Tutto dalla scorta di casa.', items: items };
   }
+  function gymHTML(i) {
+    if (S.who !== 'R') return '';
+    var g = isGym(i), n = gymCount(), done = gymDone(iso(dateOf(i)));
+    return '<div class="trip gymc"><span>🏋️ Palestra' + (g ? ' · Giorno ' + gymLetter(i) : '') + '<small>' + (done ? 'allenamento registrato nella scheda' : g ? 'più calorie, colazione abbondante e spuntino palestra' : 'giorno di riposo') + ' · ' + n + (n === 1 ? ' allenamento' : ' allenamenti') + ' questa settimana</small></span>' +
+      '<button type="button" class="tday" data-gymday="1" aria-pressed="' + g + '">' + (g ? '✓ Vado in palestra' : 'Vado in palestra') + '</button></div>';
+  }
   function tripHTML(i) {
     var dk = iso(dateOf(i)), past = dk < iso(NOW);
     if (S.who === 'R') {
@@ -578,17 +600,17 @@ var FOODS = /*FOODS*/;
   /* proteine in polvere: niente a colazione, la quota si recupera al pomeriggio (merenda) */
   var ADJ = {
     0: { mer: [['+ Proteina soia GymBeam (shake con acqua o latte)', '25 g', 95, 22, 0.8, 0.5]] },
-    1: { colActive: true, gym: true, mer: [['+ Proteina soia GymBeam (shake con acqua o latte)', '25 g', 95, 22, 0.8, 0.5]] },
+    1: { mer: [['+ Proteina soia GymBeam (shake con acqua o latte)', '25 g', 95, 22, 0.8, 0.5]] },
     2: { mer: [['+ Proteina soia GymBeam (shake con acqua o latte)', '25 g', 95, 22, 0.8, 0.5]] },
-    3: { colActive: true, gym: true, mer: [['+ Proteina soia GymBeam (shake con acqua o latte)', '25 g', 95, 22, 0.8, 0.5]] },
-    4: { colActive: true, gym: true, mer: [['+ Proteina soia GymBeam (shake con acqua o latte)', '25 g', 95, 22, 0.8, 0.5]] },
+    3: { mer: [['+ Proteina soia GymBeam (shake con acqua o latte)', '25 g', 95, 22, 0.8, 0.5]] },
+    4: { mer: [['+ Proteina soia GymBeam (shake con acqua o latte)', '25 g', 95, 22, 0.8, 0.5]] },
     5: { col: WE_COL, mer: [['+ Proteina soia GymBeam', '20 g', 76, 17.6, 0.6, 0.4]] },
     6: { col: WE_COL, mer: [['+ Proteina soia GymBeam', '30 g', 114, 26.4, 0.9, 0.6]] }
   };
   function applyAdj(out, i) {
-    var a = ADJ[i]; if (!a) return out;
+    var a = Object.assign({}, ADJ[i] || {}); if (isGym(i)) { a.gym = true; if (i < 5) a.colActive = true; }
     if (a.col) { out[0].label = 'Colazione — Colazione abbondante'; out[0].hint = 'Alle 10: vale anche come primo spuntino, niente spuntino separato.'; }
-    if (a.colActive) { var c = cloneM(D.COL_R.active); c.key = 'col'; c.kind = 'col'; c.slot = null; out[0] = c; }
+    if (a.colActive) { var c = cloneM(D.COL_R.active); c.key = 'col'; c.kind = 'col'; c.slot = 'colR'; out[0] = c; }
     ['col', 'pra', 'mer', 'cen'].forEach(function (k) {
       (a[k] || []).forEach(function (x) { var m = out.filter(function (mm) { return mm.key === k; })[0]; if (!m) return;
         m.plus = (m.plus || []).concat([[x[0], x[1]]]); m.kcal += x[2]; m.p += x[3]; m.f += x[4]; m.c += x[5]; });
@@ -644,7 +666,7 @@ var FOODS = /*FOODS*/;
     var avg = tdee - rate * KCAL_KG / 7, week = avg * 7, wd = (week - 2 * WE_KCAL) / 5, warn = '';
     if (wd < FLOOR) { wd = FLOOR; week = 5 * FLOOR + 2 * WE_KCAL; avg = week / 7; rate = Math.max(0, (tdee - avg) * 7 / KCAL_KG);
       warn = 'Con 3000 kcal nel weekend i feriali dovrebbero scendere sotto ' + FLOOR + ' kcal: li tengo a ' + FLOOR + ' e il ritmo scende a ' + r1(rate) + ' kg/sett.'; }
-    var day = {}; for (var i = 0; i < 7; i++) day[i] = i >= 5 ? WE_KCAL : Math.max(FLOOR, Math.round((wd + (GYM[i] ? 80 : -120)) / 10) * 10);
+    var day = {}; for (var i = 0; i < 7; i++) day[i] = i >= 5 ? WE_KCAL : Math.max(FLOOR, Math.round((wd + (GYM_DEF[i] ? 80 : -120)) / 10) * 10);
     var wk2 = 0; for (var j = 0; j < 7; j++) wk2 += day[j];
     if (wk2 > week + 5) { avg = wk2 / 7; rate = Math.max(0, (tdee - avg) * 7 / KCAL_KG); if (!warn) warn = 'I giorni senza palestra sarebbero sotto ' + FLOOR + ' kcal: li tengo a ' + FLOOR + '. Ritmo previsto ' + r1(rate) + ' kg/sett.'; }
     var eta = rate > 0 ? new Date(Date.now() + (cur - GOAL.to) / rate * 6048e5) : null;
@@ -681,7 +703,9 @@ var FOODS = /*FOODS*/;
   function plan() {
     if (!PLAN) {
       recalibrate(); PLAN = planCore((S.eng || {}).tdee || TDEE0);
+      var w0 = WK; WK = 0;
       var tot = 0; for (var i = 0; i < 7; i++) tot += totals(meals('R', i)).kcal;   // kcal reali del piano, non solo il bersaglio
+      WK = w0;
       PLAN.avg = Math.round(tot / 7); PLAN.rate = Math.max(0, (PLAN.tdee - PLAN.avg) * 7 / KCAL_KG);
       PLAN.eta = PLAN.rate > 0 ? new Date(Date.now() + Math.max(0, PLAN.cur - GOAL.to) / PLAN.rate * 6048e5) : null;
       S.bud = S.bud || {}; S.bud[iso(NOW)] = PLAN.avg; save();
@@ -738,7 +762,12 @@ var FOODS = /*FOODS*/;
     if (free && Math.abs(kcal - now) > 20) { var r = (kcal - now) / free.kcal; free.kcal += kcal - now; free.c *= 1 + r; free.f *= 1 + r; free.p *= 1 + r * 0.5; }
     if (free) free.hint = 'Pasto libero: punta a circa ' + Math.round(free.kcal / 10) * 10 + ' kcal, prima la parte proteica.';
   }
-  function target(who, i) { return who === 'R' ? plan().day[i] : planF().day[i]; }
+  /* Berto: le kcal del giorno seguono i giorni di palestra veri (+80 palestra, −120 riposo) */
+  function target(who, i) {
+    if (who !== 'R') return planF().day[i];
+    var P = plan(); if (i >= 5) return WE_KCAL + (isGym(i) ? 150 : 0);
+    return Math.max(FLOOR, Math.round((P.wd + (isGym(i) ? 80 : -120)) / 10) * 10);
+  }
   function eatenOf(i) { var k = iso(dateOf(i)); return ((S.eaten[k] || {})[S.who]) || {}; }
   function mins(t) { if (!/\d/.test(t || '')) t = '17:30'; var a = String(t || '0:0').split(':'); return (+a[0]) * 60 + (+a[1] || 0); }
 
@@ -755,27 +784,21 @@ var FOODS = /*FOODS*/;
   }
   function recipesFor(slot, who) { return RIC.filter(function (r) { return r.slot === slot && r.p.indexOf(who) >= 0; }); }
 
-  /* calendario 15 giorni */
-  function calIndex() {
-    if (!S.calStart) return -1;
-    var a = new Date(S.calStart + 'T12:00:00'), b = new Date(iso(NOW) + 'T12:00:00');
-    var n = Math.round((b - a) / 864e5); return n < 0 ? -1 : n % 15;
-  }
+  /* ricetta del giorno: a rotazione tra le ricette adatte a quel pasto, cambia ogni settimana */
+  function dayNum(d) { return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5); }
   function calPickFor(meal, who, i) {
-    var ci = calIndex(); if (ci < 0) return null;
-    var idx = ((ci + (i - TODAYI) + WK * 7) % 15 + 150) % 15, c = D.CAL15[idx], id;
-    if (meal.kind === 'col') id = who === 'R' ? c.colR : c.colF;
-    else if (meal.kind === 'pra') id = who === 'R' ? c.praRid : c.praFid;
-    else if (meal.kind === 'cen') id = who === 'R' ? c.cenaRid : c.cenaFid;
-    var r = RBY[id]; return r && r.slot === meal.slot ? r : null;
+    if (!meal.slot) return null;
+    var L = recipesFor(meal.slot, who); if (!L.length) return null;
+    var we = i >= 5, pref = L.filter(function (r) { return !!r.we === we; }); if (pref.length >= 3) L = pref;
+    var n = dayNum(dateOf(i)), k = Math.floor((n + 3) / 7) * 3 + i + meal.key.length;
+    return L[((k % L.length) + L.length) % L.length];
   }
-
   /* ---------- render ---------- */
   var $ = function (s) { return document.querySelector(s); };
   function renderWeek() {
     $('#week').innerHTML = weekNav() + '<div class="wdays">' + DOW.map(function (d, i) {
       var w = D.WEEK[i], tr = tripAny(iso(dateOf(i)));
-      return '<button type="button" class="dchip' + (isToday(i) ? ' today' : '') + '" data-day="' + i + '" aria-pressed="' + (i === sel) + '" aria-label="' + w.day + (tr ? ', Berto in trasferta' : '') + '"><span class="dn">' + d + '</span><span class="dd">' + dateOf(i).getDate() + '</span><span class="di' + (tr ? ' t' : S.who === 'R' && GYM[i] ? ' g' : '') + '"></span></button>';
+      return '<button type="button" class="dchip' + (isToday(i) ? ' today' : '') + '" data-day="' + i + '" aria-pressed="' + (i === sel) + '" aria-label="' + w.day + (tr ? ', Berto in trasferta' : '') + '"><span class="dn">' + d + '</span><span class="dd">' + dateOf(i).getDate() + '</span><span class="di' + (tr ? ' t' : S.who === 'R' && isGym(i) ? ' g' : '') + '"></span></button>';
     }).join('') + '</div>';
     $('#week').hidden = !(tab === 'oggi');
   }
@@ -900,13 +923,13 @@ var FOODS = /*FOODS*/;
       '<div class="bar big"><i style="width:' + Math.min(100, got.kcal / tgt * 100) + '%;background:' + (over ? 'var(--bad)' : 'var(--accent)') + '"></i></div>' +
       '<div class="sumbot"><span>Proteine <b>' + Math.round(got.p) + '</b> / ' + Math.round(tot.p) + ' g</span><span>' + nDone + ' di ' + ms.length + ' pasti</span></div></section>';
     var ctx = [];
-    if (who === 'R' && GYM[i]) ctx.push('<a href="' + GYM_URL + '" target="_top">🏋️ ' + (isToday(i) ? 'Oggi palestra' : 'Palestra') + ': ' + GYM[i] + '<span aria-hidden="true">›</span></a>');
+    if (who === 'R' && isGym(i)) ctx.push('<a href="' + GYM_URL + '" target="_top">🏋️ ' + (isToday(i) ? 'Oggi palestra' : 'Palestra') + ': Giorno ' + gymLetter(i) + '<span aria-hidden="true">›</span></a>');
     if (who === 'R' && w.lowc) ctx.push('<span>🥩 Giorno senza carboidrati: più proteine e grassi buoni</span>');
     if (who === 'F' && i === AQUA_DAY) ctx.push('<span>💧 AcquaB stasera: 150 kcal in più, già nelle porzioni</span>');
     if (i === 5) ctx.push('<span>🎉 Stasera cena libera per tutti e due</span>');
     if (i === 6) ctx.push('<span>' + (who === 'R' ? '🥐 Brioche a colazione e pranzo libero' : '🍝 Pranzo libero') + '</span>');
     if (ctx.length) h += '<div class="ctx">' + ctx.join('') + '</div>';
-    h += tripHTML(i);
+    h += gymHTML(i) + tripHTML(i);
     h += '<div class="sect"><h2>' + (isToday(i) ? 'Pasti' : 'Pasti di ' + w.day.toLowerCase() + ' ' + dateOf(i).getDate()) + '</h2><span>tocca per i dettagli</span></div><div class="meals">';
     ms.forEach(function (m) {
       var g = mealGot(m, i, eaten), L = lg[m.key], logged = L && L.length, isOpen = !!ok[m.key], col = { col: 'var(--col)', pra: 'var(--pra)', mer: 'var(--mer)', cen: 'var(--cen)', gym: 'var(--accent)' }[m.kind];
@@ -966,7 +989,7 @@ var FOODS = /*FOODS*/;
       '<div class="bar" style="height:10px;margin:12px 0 8px"><i style="width:' + (pct * 100) + '%;background:var(--ok)"></i></div>' +
       '<p class="gl">−' + r1(done) + ' kg fatti · mancano ' + r1(Math.max(0, P.cur - GOAL.to)) + ' kg in ' + Math.round(P.wl) + ' settimane</p>' +
       '<div class="kvs">' + row('Consumo stimato', eng.tdee + ' kcal/giorno') + row('Ritmo richiesto', r1(P.need) + ' kg/sett.') + row('Ritmo reale', real) + row('Media giornaliera', P.avg + ' kcal') +
-      row('Palestra (mar, gio, ven)', P.day[1] + ' kcal') + row('Lun e mer (riposo)', P.day[0] + ' kcal') + row('Sabato e domenica', WE_KCAL + ' kcal') + (P.eta ? row('Arrivo previsto', P.eta.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })) : '') + '</div>' +
+      row('Giorno di palestra', P.day[1] + ' kcal') + row('Giorno di riposo', P.day[0] + ' kcal') + row('Sabato e domenica', WE_KCAL + ' kcal') + (P.eta ? row('Arrivo previsto', P.eta.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })) : '') + '</div>' +
       (P.warn ? '<p class="gl warn">⚠️ ' + esc(P.warn) + '</p>' : '') +
       '<p class="gl">⚙️ ' + calib + '. Pesati la mattina a digiuno, anche tutti i giorni: conta la tendenza, non il singolo dato. Dopo il weekend da 3000 il lunedì sarai più pesante per acqua e carboidrati: è normale.</p>' +
       '<form class="wf" id="wform"><input id="wkg" type="text" inputmode="decimal" placeholder="Peso di oggi (kg)" aria-label="Peso di oggi in kg"><button class="chipbtn hi" type="submit">Salva</button></form>' +
@@ -979,7 +1002,7 @@ var FOODS = /*FOODS*/;
       var short = function (m) { var x = m.label.replace(/^(Colazione|Pranzo|Cena|Merenda|Spuntino)\s*—\s*/, '').replace(/\s*\(\+camminata\)/, ''); return /^(Colazione|Merenda|Spuntino)( Tipo [AB])?$/.test(x) ? (m.items[0] ? m.items[0][0] : x) : x; };
       var by = {}; ms.forEach(function (m) { by[m.kind] = m; });
       var dk = iso(dateOf(i)), tp = (S.trip || {})[dk] || {}, tpl = tripAny(dk) ? [tripAll(dk) ? 'tutto il giorno' : TRIPK.filter(function (k) { return tp[k]; }).map(function (k) { return { col: 'colazione', pra: 'pranzo', mer: 'merenda', cen: 'cena' }[k]; }).join(', ')] : [];
-      h += '<button type="button" class="wd' + (isToday(i) ? ' today' : '') + (dk < iso(NOW) ? ' past' : '') + '" data-goday="' + i + '"><div class="wh"><h3>' + (isToday(i) ? 'Oggi · ' : '') + w.day + ' ' + dateOf(i).getDate() + '</h3><span class="wk2">' + fmt(t.kcal) + ' kcal' + (who === 'R' && GYM[i] ? ' · 🏋️ ' + GYM[i].replace('Giorno ', '') : '') + (nd ? ' · ✓ ' + nd : '') + '</span></div>' +
+      h += '<button type="button" class="wd' + (isToday(i) ? ' today' : '') + (dk < iso(NOW) ? ' past' : '') + '" data-goday="' + i + '"><div class="wh"><h3>' + (isToday(i) ? 'Oggi · ' : '') + w.day + ' ' + dateOf(i).getDate() + '</h3><span class="wk2">' + fmt(t.kcal) + ' kcal' + (who === 'R' && isGym(i) ? ' · 🏋️ ' + gymLetter(i) : '') + (nd ? ' · ✓ ' + nd : '') + '</span></div>' +
         (tpl.length ? '<div class="trp">🧳 Berto fuori: ' + tpl[0] + (who === 'F' ? ' · per te pasti veloci' : '') + '</div>' : '') +
         '<div class="wl">' + [['Colazione', by.col], ['Pranzo', by.pra], ['Merenda', by.mer], ['Cena', by.cen]].map(function (x) { return '<div><small>' + x[0] + '</small><span>' + esc(x[1] ? short(x[1]) : '—') + '</span></div>'; }).join('') + '</div></button>';
     });
@@ -1070,7 +1093,7 @@ var FOODS = /*FOODS*/;
       '<div class="bar" style="height:10px;margin:12px 0 6px"><i style="width:' + (pct * 100) + '%;background:var(--ok)"></i></div>' +
       '<p class="gl">Mancano ' + it(Math.max(0, P.cur - GOAL.to)) + ' kg' + (P.eta ? ' · arrivo previsto ' + P.eta.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) : '') + '</p>' +
       '<form class="wf" id="wform"><input id="wkg" type="text" inputmode="decimal" placeholder="' + (todayW ? 'Oggi ' + it(todayW) + ' kg · puoi correggere' : 'Peso di stamattina (kg)') + '" aria-label="Peso di oggi in kg"><button class="chipbtn hi" type="submit">Salva</button></form>' +
-      '<div class="kcal3"><div><small>Palestra</small><b>' + fmt(P.day[1]) + '</b></div><div><small>Lun e mer</small><b>' + fmt(P.day[0]) + '</b></div><div><small>Weekend</small><b>' + fmt(WE_KCAL) + '</b></div></div>' +
+      '<div class="kcal3"><div><small>Palestra</small><b>' + fmt(P.day[1]) + '</b></div><div><small>Riposo</small><b>' + fmt(P.day[0]) + '</b></div><div><small>Weekend</small><b>' + fmt(WE_KCAL) + '</b></div></div>' +
       '<details class="more"><summary>Come calcolo le calorie</summary><div class="kvs">' + row('Consumo stimato', fmt(eng.tdee) + ' kcal/giorno') + row('Ritmo richiesto', it(P.need) + ' kg/sett.') + row('Ritmo reale', real) + row('Media del piano', fmt(P.avg) + ' kcal/giorno') + '</div>' +
       (P.warn ? '<p class="gl warn">⚠️ ' + esc(P.warn) + '</p>' : '') +
       '<p class="gl">Pesati la mattina a digiuno: conta la tendenza, non il singolo giorno. Quando ci sono 2 settimane di pesate ricalcolo il tuo consumo dal peso reale e da quello che hai mangiato: se registri i pasti uso quelli, altrimenti considero il piano rispettato. Dopo il weekend il lunedì sarai più pesante per acqua e carboidrati: è normale.</p></details>' +
@@ -1145,7 +1168,7 @@ var FOODS = /*FOODS*/;
   }
 
   var rq = '', rf = 'all', rwe = false;
-  var RF = [['all', 'Tutte'], ['col', 'Colazione'], ['pra', 'Pranzo'], ['cen', 'Cena'], ['cenPol', '🍗 Pollo'], ['cenSal', '🐟 Salmone'], ['cenCar', '🥩 Carne'], ['cenTofu', '🌱 Tofu'], ['cenFPass', '🫕 Passati']];
+  var RF = [['all', 'Tutte'], ['col', 'Colazione'], ['pra', 'Pranzo'], ['cen', 'Cena'], ['praL', '🫘 Legumi'], ['cenPol', '🍗 Pollo'], ['cenPolp', '🧆 Polpette'], ['cenCar', '🥩 Carne rossa'], ['cenSal', '🐟 Pesce'], ['cenTofu', '🌱 Tofu'], ['cenUova', '🥚 Uova'], ['cenFPass', '🥣 Vellutate']];
   function slotGroup(s) { return /^col/.test(s) ? 'col' : /^pra/.test(s) ? 'pra' : 'cen'; }
   function renderRicette(keepFocus) {
     var who = S.who, q = rq.trim().toLowerCase();
@@ -1166,22 +1189,17 @@ var FOODS = /*FOODS*/;
   }
 
   function renderCal() {
-    var who = S.who, ci = calIndex();
-    var h = '<div class="sect" style="margin-top:8px"><h2>Calendario 15 giorni</h2><span>ricette a rotazione</span></div>';
-    if (ci < 0) {
-      h += '<div class="note" style="margin-top:0"><b>Come funziona:</b> 15 giorni di ricette diverse per colazione, pranzo e cena, sempre dentro le quantità del piano. Avvialo e ogni pasto in “Oggi” ti propone la ricetta del giorno.</div>' +
-        '<div class="tools"><button type="button" class="chipbtn hi" id="calStart">Inizia da lunedì</button><button type="button" class="chipbtn" id="calToday">Inizia da oggi</button></div>';
-    } else {
-      h += '<div class="tools" style="margin:0 0 12px"><span class="tag">Sei al giorno ' + (ci + 1) + ' di 15</span><button type="button" class="chipbtn" id="calStop">Ricomincia</button></div>';
+    var who = S.who, h = '<div class="sect" style="margin-top:8px"><h2>Prossimi 14 giorni</h2><span>ricetta del giorno per ogni pasto</span></div>';
+    var w0 = WK, keep = sel;
+    for (var d = 0; d < 14; d++) {
+      var abs = TODAYI + d; WK = Math.floor(abs / 7); var i = abs % 7;
+      var ms = meals(who, i), dt = dateOf(i);
+      var rows = ms.map(function (m) { var r = calPickFor(m, who, i); return r ? '<button type="button" data-rec="' + r.id + '"><em>' + esc(kindOf(m)) + '</em>' + r.e + ' ' + esc(r.n) + '</button>' : ''; }).join('');
+      h += '<article class="cday' + (d === 0 ? ' now' : '') + '"><h3>' + (d === 0 ? 'Oggi · ' : '') + D.WEEK[i].day + ' <small>' + dt.getDate() + ' ' + dt.toLocaleDateString('it-IT', { month: 'short' }) + (who === 'R' && isGym(i) ? ' · 🏋️ ' + gymLetter(i) : '') + '</small></h3><div class="crow">' + (rows || '<p class="hint">Pasti liberi o senza ricetta</p>') + '</div></article>';
     }
-    D.CAL15.forEach(function (c, j) {
-      var cls = ci < 0 ? '' : j === ci ? ' now' : j < ci ? ' past' : '';
-      var rows = [['Colazione', who === 'R' ? c.colR : c.colF], ['Pranzo', who === 'R' ? c.praRid : c.praFid], ['Cena', who === 'R' ? c.cenaRid : c.cenaFid]];
-      h += '<article class="cday' + cls + '"' + (j === ci ? ' id="calNow"' : '') + '><h3>' + (j === ci ? 'Oggi · ' : '') + 'Giorno ' + c.g + ' <small>' + c.nome + (c.isWE ? ' · weekend' : '') + '</small></h3><div class="crow">' +
-        rows.map(function (x) { var r = RBY[x[1]]; return r ? '<button type="button" data-rec="' + r.id + '"><em>' + x[0] + '</em>' + r.e + ' ' + esc(r.n) + '</button>' : ''; }).join('') + '</div></article>';
-    });
+    WK = w0; sel = keep;
+    h += '<p class="hint" style="margin-top:12px">Ricette ispirate a GialloZafferano, ai blog di GialloZafferano e a Fatto in casa da Benedetta, rifatte con le dosi del piano. In ogni ricetta trovi il link all’originale.</p>';
     $('#main').innerHTML = h;
-    var n = document.getElementById('calNow'); if (n) n.scrollIntoView({ block: 'center' });
   }
 
   function paintMe() {
@@ -1195,7 +1213,7 @@ var FOODS = /*FOODS*/;
     document.querySelectorAll('.who button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.who === S.who)); });
     $('#htitle').textContent = { oggi: isToday(sel) ? 'Oggi' : D.WEEK[sel].day, settimana: 'Piano', spesa: 'Spesa', analisi: 'Progressi' }[navTab];
     $('#season').textContent = tab === 'oggi' ? dateOf(sel).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'short' }) : '';
-    $('#subnav').innerHTML = navTab === 'settimana' ? [['settimana', 'Settimana'], ['cal', '15 giorni'], ['ricette', 'Ricette']].map(function (x) { return '<button type="button" data-tab="' + x[0] + '" aria-pressed="' + (tab === x[0]) + '">' + x[1] + '</button>'; }).join('') : '';
+    $('#subnav').innerHTML = navTab === 'settimana' ? [['settimana', 'Settimana'], ['cal', 'Prossimi giorni'], ['ricette', 'Ricette']].map(function (x) { return '<button type="button" data-tab="' + x[0] + '" aria-pressed="' + (tab === x[0]) + '">' + x[1] + '</button>'; }).join('') : '';
     var pk = S.who === 'F'; document.documentElement.classList.toggle('pesca', pk);
     try { if (EMBED && parent.document) parent.document.documentElement.classList.toggle('pesca', pk); } catch (e) {}
     renderWeek(); paintMe();
@@ -1212,7 +1230,8 @@ var FOODS = /*FOODS*/;
     return '<div class="sh"><div><div style="font-size:40px;line-height:1">' + r.e + '</div><h2 id="shTitle" style="margin-top:6px">' + esc(r.n) + '</h2></div><button type="button" class="x" data-close aria-label="Chiudi">' + XICON + '</button></div>' +
       '<div class="meta"><span class="tag">⏱ ' + r.min + ' min</span>' + (r.we ? '<span class="tag free">✨ Weekend</span>' : '') + (r.p === 'RF' ? '<span class="tag">👫 Per tutti e due</span>' : '') + '<span class="tag">Dosi per ' + (who === 'R' ? 'Berto' : 'Pesca') + '</span></div>' +
       '<h4>Ingredienti</h4><ul class="ing">' + ing + '</ul><h4>Preparazione</h4><ol class="steps">' + r.steps.map(function (s) { return '<li><span>' + esc(s) + '</span></li>'; }).join('') + '</ol>' +
-      (r.note ? '<div class="note">💡 ' + esc(r.note) + '</div>' : '');
+      (r.note ? '<div class="note">💡 ' + esc(r.note) + '</div>' : '') +
+      (r.src ? '<p class="src">Idea da <a href="' + esc(r.src) + '" target="_blank" rel="noopener">' + esc(r.srcN || 'fonte') + ' ↗</a> · dosi e passaggi adattati al piano</p>' : '');
   }
   function ideasHTML(slot) {
     var rs = recipesFor(slot, S.who), we = sel >= 5;
@@ -1227,6 +1246,7 @@ var FOODS = /*FOODS*/;
     var t = ev.target.closest('button, [data-close]'); if (!t) { if (ev.target.id === 'scrim') closeSheet(); return; }
     var ds = t.dataset;
     if (ds.trip) { var td = iso(dateOf(sel)); S.trip = S.trip || {}; var tt = S.trip[td] = S.trip[td] || {}; if (tt[ds.trip]) delete tt[ds.trip]; else tt[ds.trip] = 1; if (!Object.keys(tt).length) delete S.trip[td]; save(); toast(tt[ds.trip] ? 'Mangi fuori' : 'Mangi a casa'); return render(); }
+    if (ds.gymday) { var gd = iso(dateOf(sel)); S.gymDays = S.gymDays || {}; var now = isGym(sel); S.gymDays[gd] = !now; if (!!GYM_DEF[sel] === !now && !gymDone(gd)) delete S.gymDays[gd]; save(); PLAN = null; toast(!now ? 'Palestra segnata: piano adattato' : 'Giorno di riposo: piano adattato'); return render(); }
     if (ds.tripday) { var dd = iso(dateOf(sel)); S.trip = S.trip || {}; if (tripAll(dd)) { delete S.trip[dd]; toast('Trasferta tolta'); } else { S.trip[dd] = { col: 1, pra: 1, mer: 1, cen: 1 }; toast('Trasferta segnata: per Pesca pasti veloci'); } save(); return render(); }
     if (ds.quick) { var qd = iso(dateOf(sel)); S.quick = S.quick || {}; var qq = S.quick[qd] = S.quick[qd] || {}; qq[ds.quick] = !quickOn(qd, ds.quick); save(); return render(); }
     if (ds.qalt) { var ad = iso(dateOf(sel)) + ds.qalt; S.qalt = S.qalt || {}; S.qalt[ad] = (S.qalt[ad] || 0) + 1; save(); return render(); }

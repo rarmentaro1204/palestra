@@ -417,7 +417,13 @@ h1 { font-size: 21px; white-space: nowrap; overflow: hidden; text-overflow: elli
   function setDay(d) { DAY = DAYS[d] ? d : 'A'; PLAN = DAYS[DAY].plan; }
   function suggestDay() {
     var t = state.sessions[TODAY]; if (t && t.day) return t.day;
-    var wd = new Date().getDay(); for (var q = 0; q < DAYKEYS.length; q++) if (DAYS[DAYKEYS[q]].dow === wd) return DAYKEYS[q]; /* mar A, gio B, ven C */
+    /* giorni di palestra segnati nella dieta (di base mar, gio, ven): oggi è l'n-esimo della settimana → A, B o C */
+    try {
+      var dS = JSON.parse(localStorage.getItem('dieta-pb-v3') || '{}'), GD = dS.gymDays || {}, now = new Date(), wi = (now.getDay() + 6) % 7, DEF = { 1: 1, 3: 1, 4: 1 };
+      var dk = function (j) { var d = new Date(now); d.setDate(d.getDate() - wi + j); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); };
+      var isG = function (j) { var k = dk(j); if (GD[k] !== undefined) return !!GD[k]; var ss = state.sessions[k]; if (ss && ss.day && k < TODAY) return true; return !!DEF[j]; };
+      if (isG(wi)) { var n = 0; for (var j = 0; j < wi; j++) if (isG(j)) n++; return DAYKEYS[n % DAYKEYS.length]; }
+    } catch (e) {}
     var ds = Object.keys(state.sessions).filter(function (d) { return d < TODAY && state.sessions[d].day; }).sort().reverse();
     for (var j = 0; j < ds.length; j++) {
       var s = state.sessions[ds[j]];

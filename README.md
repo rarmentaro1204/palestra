@@ -17,3 +17,7 @@ Le foto degli esercizi nuovi (chest press, panca inclinata manubri, rotazioni es
 - `sw.js` (service worker) mostra la notifica; `manifest.webmanifest` e le icone permettono di aggiungere l'app alla schermata Home (su iPhone le notifiche web funzionano solo così).
 - `netlify/functions/timer.mjs` è una funzione in background senza dipendenze: riceve la subscription e i secondi del recupero, aspetta, controlla su Firestore (documento `gym`, campo `timer`) che il cronometro non sia stato saltato o cambiato e manda la push (Web Push cifrata aes128gcm + VAPID, solo `node:crypto`).
 - Variabili d'ambiente su Netlify: `VAPID_PUBLIC`, `VAPID_PRIVATE` (segreta).
+
+## Ricette
+
+`diet/src/ricette.py` genera `ric.json` (109 ricette). Le idee vengono da GialloZafferano, dai blog di GialloZafferano e da Fatto in casa da Benedetta: non copiamo testi né foto, le dosi sono quelle del piano e i passaggi sono riscritti in versione leggera; ogni ricetta ha il link all'originale (`src`).
