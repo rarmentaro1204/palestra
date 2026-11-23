@@ -4,7 +4,7 @@ self.addEventListener('activate', function (e) { e.waitUntil(self.clients.claim(
 self.addEventListener('push', function (e) {
   var d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) { d = { body: e.data ? e.data.text() : '' }; }
   e.waitUntil(self.registration.showNotification(d.title || '⏱ Recupero finito', {
-    body: d.body || 'Vai con la prossima serie', tag: d.tag || 'timer', renotify: true,
+    body: d.body || 'Vai con la prossima serie', tag: d.tag || ('timer-' + Date.now()), silent: false,
     icon: 'icon-192.png', badge: 'icon-192.png', vibrate: [300, 120, 300, 120, 500], requireInteraction: false
   }));
 });

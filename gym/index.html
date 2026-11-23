@@ -328,9 +328,9 @@ h1 { font-size: 21px; white-space: nowrap; overflow: hidden; text-overflow: elli
       </div>
     </div>
     <nav class="nav">
-      <button type="button" class="nb" id="prev">‹ Prec.</button>
+      <button type="button" class="nb" id="prev">‹ <span id="prevL">Prec.</span></button>
       <button type="button" class="nb timer" id="manual">⏱ 2:00</button>
-      <button type="button" class="nb" id="next">Succ. ›</button>
+      <button type="button" class="nb" id="next"><span id="nextL">Succ.</span> ›</button>
     </nav>
   </div>
 </div>
@@ -397,9 +397,9 @@ h1 { font-size: 21px; white-space: nowrap; overflow: hidden; text-overflow: elli
       SS('c1', 'Panca piana + Pulley basso', 3, 120, 'Panca tecnica: circa il 90% del carico di martedì, 6-8 ripetizioni pulite e veloci in salita. Pulley: petto alto, scapole indietro.',
         { id: 'panca-tec', label: 'A1', name: 'Panca piana tecnica', range: '6-8', yt: '0cXAp6WhSj4' },
         { id: 'pulley', label: 'A2', name: 'Pulley basso', range: '8-10' }),
-      SS('c2', 'Stacco rumeno + Split squat', 3, 90, 'Gambe a mantenimento, carichi alti. Stacco: anche indietro, schiena neutra. Split squat: kg per manubrio, ripetizioni per gamba (2 serie bastano, la terza è facoltativa).',
+      SS('c2', 'Stacco rumeno + Leg extension', 3, 90, 'Gambe a mantenimento, carichi alti. Stacco: anche indietro, schiena neutra, bilanciere vicino alle gambe. Leg extension: su lenta, 1 secondo di fermo in alto.',
         { id: 'rdl', label: 'B1', name: 'Stacco rumeno', range: '6-8' },
-        { id: 'split', label: 'B2', name: 'Split squat manubri', range: '8-10' }),
+        { id: 'legext', label: 'B2', name: 'Leg extension', range: '10-12' }),
       SS('c3', 'Alzate laterali + Curl inclinato', 3, 60, 'Alzate senza slancio. Curl inclinato: braccio dietro il busto, muscolo allungato in basso.',
         { id: 'lat-raise', label: 'C1', name: 'Alzate laterali ai cavi', range: '12-15', yt: 'ZZYpkGiPcgk' },
         { id: 'curl-inc', label: 'C2', name: 'Curl panca inclinata', range: '10-12', yt: 'rAx_tf13V5k' }),
@@ -450,7 +450,7 @@ h1 { font-size: 21px; white-space: nowrap; overflow: hidden; text-overflow: elli
   var cur = { b: 0, i: 0, k: 0 };
 
   function loadLocal() { try { var r = JSON.parse(localStorage.getItem(LS) || 'null'); if (r) { state.sessions = r.sessions || {}; state.notes = r.notes || {}; state.clips = r.clips || {}; } } catch (e) {} }
-  function saveLocal() { try { localStorage.setItem(LS, JSON.stringify({ sessions: state.sessions, notes: state.notes, clips: state.clips, timer: state.timer || null })); } catch (e) {} }
+  function saveLocal() { try { localStorage.setItem(LS, JSON.stringify({ sessions: state.sessions, notes: state.notes, clips: state.clips, })); } catch (e) {} }
   function sess() { return state.sessions[TODAY] || (state.sessions[TODAY] = { date: TODAY, sets: {} }); }
   function rows(e) { var s = sess(), a = s.sets[e.id] || (s.sets[e.id] = []); while (a.length < e.block.sets) a.push({}); return a; }
   function lastDone(e) {
@@ -633,7 +633,9 @@ h1 { font-size: 21px; white-space: nowrap; overflow: hidden; text-overflow: elli
       var c = blockCount(bb);
       return '<button type="button" class="seg" data-go="' + j + '" style="--p:' + (c.t ? c.d / c.t : 0) + '"' + (j === cur.b ? ' aria-current="step"' : '') + ' aria-label="' + esc(bb.title) + '"></button>';
     }).join('');
-    $('#prev').disabled = cur.b === 0; $('#next').disabled = cur.b === PLAN.length - 1;
+    var pv = exStep(-1), nx = exStep(1);
+    $('#prev').disabled = !pv; $('#next').disabled = !nx;
+    $('#prevL').textContent = pv ? exShort(pv) : 'Prec.'; $('#nextL').textContent = nx ? exShort(nx) : 'Succ.';
     $('#manual').textContent = '⏱ ' + fmtRest(b.rest || 60).replace(' min', ':00').replace(' sec', '"');
   }
   function stepRow(e, f, v) {
@@ -762,8 +764,24 @@ h1 { font-size: 21px; white-space: nowrap; overflow: hidden; text-overflow: elli
   });
   stage.addEventListener('focusin', function (ev) { if (ev.target.classList && ev.target.classList.contains('val')) setTimeout(function () { try { ev.target.select(); } catch (e) {} }, 0); });
   $('#segs').addEventListener('click', function (ev) { var t = ev.target.closest('[data-go]'); if (t) goBlock(+t.dataset.go); });
-  $('#prev').addEventListener('click', function () { goBlock(cur.b - 1); });
-  $('#next').addEventListener('click', function () { goBlock(cur.b + 1); });
+  /* Prec./Succ. vanno di esercizio in esercizio (A1 → A2 → B1 …) e mostrano la prima serie ancora da fare:
+     la serie successiva la scegli tu (Serie fatta o i numeri delle serie) */
+  function exStep(d) {
+    var b = cur.b, k = cur.k + d;
+    while (b >= 0 && b < PLAN.length) {
+      if (k >= 0 && k < PLAN[b].ex.length) return { b: b, k: k };
+      b += d; if (b < 0 || b >= PLAN.length) return null; k = d > 0 ? 0 : PLAN[b].ex.length - 1;
+    }
+    return null;
+  }
+  function exShort(p) { var e = PLAN[p.b].ex[p.k]; return PLAN[p.b].warm ? 'Mobilità' : (e.label && PLAN[p.b].ex.length > 1 ? e.label : '') || e.name.split(' ')[0]; }
+  function goEx(p) {
+    if (!p) return; cur.b = p.b; cur.k = p.k;
+    var R = rows(curEx()), f = null; for (var i = 0; i < curBlock().sets; i++) if (!R[i].done) { f = i; break; }
+    cur.i = f == null ? 0 : f; adjusting = null; confirmDel = null; mediaMsg = ''; render();
+  }
+  $('#prev').addEventListener('click', function () { goEx(exStep(-1)); });
+  $('#next').addEventListener('click', function () { goEx(exStep(1)); });
   $('#manual').addEventListener('click', function () { startTimer(curBlock().rest || 60); });
 
   /* ---------- dieta (da dietapb.netlify.app, edizione Inverno) ---------- */
@@ -843,8 +861,9 @@ h1 { font-size: 21px; white-space: nowrap; overflow: hidden; text-overflow: elli
   }
   /* notifica sul telefono a fine recupero: la programma la pagina principale (index.html) */
   function PT() { try { return parent !== window && parent.ARME ? parent.ARME : null; } catch (e) { return null; } }
-  function pushStart(sec) { var A = PT(); if (!A || !A.timer) return; state.timer = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); saveLocal(); A.timer.start(sec, describeStep(), state.timer); }
-  function pushStop() { if (!state.timer) return; state.timer = null; saveLocal(); }
+  var pushId = null;
+  function pushStart(sec) { var A = PT(); if (!A || !A.timer) return; if (pushId) A.timer.cancel(pushId); pushId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); A.timer.start(sec, describeStep(), pushId); }
+  function pushStop() { var A = PT(); if (!pushId) return; if (A && A.timer) A.timer.cancel(pushId); pushId = null; }
   function paintBell() { var A = PT(), b = $('#tbell'); if (!b) return; var st = A && A.push ? A.push.state() : 'no'; b.hidden = st === 'on' || st === 'no'; }
   function startTimer(sec) {
     initAudio(); wake(); clearInterval(T.iv);

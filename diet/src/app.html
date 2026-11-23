@@ -376,6 +376,16 @@ h1, h2, h3 { margin: 0; }
 .src { margin: 14px 0 0; font-size: 13px; color: var(--muted); }
 .src a { color: var(--accent); font-weight: 600; }
 .trip.gymc .tday[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.gchart { width: 100%; height: auto; display: block; margin: 6px 0 4px; }
+.gchart .gb { fill: var(--line); } .gchart .gbn { fill: var(--accent); }
+.gchart .gl3 { stroke: var(--muted); stroke-dasharray: 4 4; stroke-width: 1; }
+.gchart .gv { font-size: 12px; font-weight: 700; fill: var(--ink); text-anchor: middle; }
+.gchart .gx { font-size: 10px; fill: var(--muted); text-anchor: middle; }
+.gchart .gline { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; }
+.gchart .gdot { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+.gh { font-size: 14px; margin: 14px 0 2px; }
+.kv small.up { color: var(--ok, #2E7D4F); font-weight: 600; } .kv small.dn { color: var(--bad); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -529,18 +539,31 @@ var FOODS = /*FOODS*/;
         ['Bar o autogrill', '', lc ? 'insalatona o piatto di bresaola e grana, acqua' : 'piadina o panino con bresaola, pollo o crudo, senza salse, acqua'],
         ['Da evitare', '', 'fritti, salse, dolce, bibite zuccherate, birra'] ] });
   }
-  /* pasti veloci: solo cose della scorta di casa, circa 30 g di proteine a pasto */
-  var QUICK = [
-    { n: 'Bresaola, grana, pane e insalata', t: 'Da portare in ufficio: si prepara in 3 minuti.', items: [['Bresaola', '80 g'], ['Pane integrale (anche in cassetta)', '50 g'], ['Grana', '10 g'], ['Insalata in busta o pomodorini', '120 g'], ['Olio EVO', '5 ml']], kcal: 347, p: 35, f: 12, c: 26 },
+  /* pasti veloci: cose della scorta di casa, circa 25-35 g di proteine a pasto.
+     I pranzi si portano in ufficio (freddi o microonde), le cene si fanno in 10-15 minuti a casa. */
+  var QUICK_P = [
+    { n: 'Bresaola, grana, pane e insalata', t: 'Da portare in ufficio: 3 minuti.', items: [['Bresaola', '80 g'], ['Pane integrale (anche in cassetta)', '50 g'], ['Grana', '10 g'], ['Insalata in busta o pomodorini', '120 g'], ['Olio EVO', '5 ml']], kcal: 347, p: 35, f: 12, c: 26 },
     { n: 'Tonno, gallette e insalata', t: 'Pronto in 3 minuti, anche in ufficio.', items: [['Tonno al naturale (sgocciolato)', '110 g'], ['Gallette di riso', '30 g'], ['Mais in scatola', '50 g'], ['Insalata in busta', '100 g'], ['Olio EVO', '5 ml']], kcal: 333, p: 30, f: 7, c: 34 },
-    { n: 'Riso pronto con pollo e verdure', t: 'Padella 8 minuti pollo e verdure surgelate, riso 2 minuti al microonde.', items: [['Petto di pollo surgelato a cubetti', '100 g'], ['Riso basmati pronto (busta da microonde)', '125 g'], ['Verdure surgelate', '150 g'], ['Olio EVO', '5 ml']], kcal: 400, p: 31, f: 9, c: 47 },
+    { n: 'Insalata di farro, tonno e pomodorini', t: 'Farro precotto in busta: si condisce freddo, ottimo in schiscetta.', items: [['Farro precotto (busta)', '125 g'], ['Tonno al naturale (sgocciolato)', '80 g'], ['Pomodorini', '120 g'], ['Olio EVO', '5 ml'], ['Basilico o origano', 'q.b.']], kcal: 317, p: 25.5, f: 7, c: 37 },
+    { n: 'Piadina bresaola, rucola e grana', t: 'Piadina scaldata 1 minuto in padella, poi si arrotola.', items: [['Piadina integrale', '70 g'], ['Bresaola', '60 g'], ['Rucola', '30 g'], ['Grana a scaglie', '10 g']], kcal: 340, p: 28, f: 9, c: 36 },
+    { n: 'Poke veloce con tonno', t: 'Riso pronto 2 minuti al microonde, il resto a crudo.', items: [['Riso basmati pronto (busta)', '125 g'], ['Tonno al naturale (sgocciolato)', '80 g'], ['Mais in scatola', '50 g'], ['Avocado o pomodorini', '40 g'], ['Salsa di soia', '5 ml']], kcal: 382, p: 25, f: 7.5, c: 50 },
+    { n: 'Insalata di fagioli, tonno e cipolla', t: 'Classico da schiscetta, pronto in 3 minuti.', items: [['Fagioli in scatola (sciacquati)', '120 g'], ['Tonno al naturale (sgocciolato)', '80 g'], ['Cipolla rossa', '20 g'], ['Pane integrale', '40 g'], ['Olio EVO', '5 ml']], kcal: 340, p: 29.5, f: 7, c: 38 },
+    { n: 'Couscous con ceci, verdure e feta', t: 'Couscous: acqua bollente sopra, 5 minuti coperto. Verdure grigliate surgelate al microonde.', items: [['Couscous', '45 g'], ['Ceci in scatola (sciacquati)', '100 g'], ['Verdure grigliate surgelate', '150 g'], ['Feta', '35 g'], ['Olio EVO', '5 ml']], kcal: 465, p: 21, f: 13, c: 62 },
+    { n: 'Riso pronto con pollo e verdure', t: 'Padella 8 minuti pollo e verdure surgelate, riso 2 minuti al microonde.', items: [['Petto di pollo surgelato a cubetti', '100 g'], ['Riso basmati pronto (busta da microonde)', '125 g'], ['Verdure surgelate', '150 g'], ['Olio EVO', '5 ml']], kcal: 400, p: 31, f: 9, c: 47 }
+  ];
+  var QUICK_C = [
     { n: 'Uova strapazzate, pane e verdure', t: 'Padella: 8 minuti le verdure surgelate, poi uova e albumi.', items: [['Uova', '100 g'], ['Albumi', '100 g'], ['Pane integrale (anche in cassetta)', '40 g'], ['Verdure surgelate', '200 g'], ['Olio EVO', '5 ml']], kcal: 400, p: 32, f: 16, c: 29 },
-    { n: 'Pasta al tonno e passata', t: '15 minuti: il sugo si fa mentre cuoce la pasta.', items: [['Pasta', '60 g'], ['Tonno al naturale (sgocciolato)', '80 g'], ['Passata di pomodoro', '100 g'], ['Olio EVO', '5 ml']], kcal: 370, p: 27, f: 6.5, c: 51 }
+    { n: 'Pasta al tonno e passata', t: '15 minuti: il sugo si fa mentre cuoce la pasta.', items: [['Pasta', '60 g'], ['Tonno al naturale (sgocciolato)', '80 g'], ['Passata di pomodoro', '100 g'], ['Olio EVO', '5 ml']], kcal: 370, p: 27, f: 6.5, c: 51 },
+    { n: 'Merluzzo al forno e patate al microonde', t: 'Merluzzo surgelato in forno 15 minuti a 200 °C; patate a cubetti 6 minuti al microonde.', items: [['Merluzzo surgelato', '200 g'], ['Patate', '150 g'], ['Verdura o insalata', '150 g'], ['Olio EVO', '8 ml']], kcal: 400, p: 40, f: 9, c: 32 },
+    { n: 'Omelette prosciutto e spinaci', t: 'Spinaci surgelati 5 minuti in padella, poi le uova sopra.', items: [['Uova', '100 g'], ['Prosciutto cotto', '40 g'], ['Spinaci surgelati', '200 g'], ['Pane integrale', '30 g'], ['Olio EVO', '3 ml']], kcal: 345, p: 29, f: 15, c: 25 },
+    { n: 'Zuppa di legumi pronta con uovo e crostini', t: 'Zuppa in busta scaldata 4 minuti; uovo sodo dalla scorta.', items: [['Zuppa di legumi pronta', '300 g'], ['Uovo sodo', '1'], ['Grana', '10 g'], ['Pane integrale tostato', '40 g']], kcal: 420, p: 25, f: 12, c: 52 },
+    { n: 'Salmone affumicato, patate e insalata', t: 'Patate al microonde 6 minuti, il resto a crudo.', items: [['Salmone affumicato', '80 g'], ['Patate', '150 g'], ['Insalata in busta', '100 g'], ['Limone', '½'], ['Olio EVO', '5 ml']], kcal: 335, p: 23.5, f: 11, c: 30 },
+    { n: 'Pollo al curry veloce con riso', t: 'Pollo a cubetti 8 minuti in padella con yogurt e curry; riso pronto 2 minuti.', items: [['Petto di pollo surgelato a cubetti', '120 g'], ['Yogurt bianco magro', '50 g'], ['Riso basmati pronto (busta)', '125 g'], ['Curry', 'q.b.']], kcal: 350, p: 36, f: 4.5, c: 44 },
+    { n: 'Caprese con pane', t: 'Nessuna cottura: 3 minuti.', items: [['Mozzarella light', '125 g'], ['Pomodori', '200 g'], ['Pane integrale', '50 g'], ['Olio EVO', '5 ml'], ['Basilico', 'q.b.']], kcal: 406, p: 30, f: 16, c: 30 }
   ];
   function quickMeal(m, i) {
-    var dk = iso(dateOf(i)), off = ((S.qalt || {})[dk + m.key] || 0);
-    var base = m.key === 'pra' ? [0, 1, 2][i % 3] : [4, 2, 3][i % 3];
-    var Q = QUICK[(base + off) % QUICK.length], r = m.kcal / Q.kcal;
+    var dk = iso(dateOf(i)), off = ((S.qalt || {})[dk + m.key] || 0), L = m.key === 'pra' ? QUICK_P : QUICK_C;
+    var n = dayNum(dateOf(i)), Q = L[(((n * 3 + off) % L.length) + L.length) % L.length], r = m.kcal / Q.kcal;
     var items = Q.items.map(function (it) {
       var q = it[1].match(/^(\d+)\s*(g|ml)$/); if (!q) return it.slice();
       var g = +q[1] * r; g = /Olio/.test(it[0]) ? Math.max(3, Math.min(12, Math.round(g))) : Math.max(5, Math.round(g / 5) * 5);
@@ -1099,6 +1122,52 @@ var FOODS = /*FOODS*/;
       '<p class="gl">Pesati la mattina a digiuno: conta la tendenza, non il singolo giorno. Quando ci sono 2 settimane di pesate ricalcolo il tuo consumo dal peso reale e da quello che hai mangiato: se registri i pasti uso quelli, altrimenti considero il piano rispettato. Dopo il weekend il lunedì sarai più pesante per acqua e carboidrati: è normale.</p></details>' +
       (ks.length ? '<details class="more"><summary>Storico pesate</summary>' + ks.slice().reverse().map(function (k) { return '<div class="kv"><span>' + new Date(k).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' }) + '</span><b>' + it(S.w[k]) + ' kg <button type="button" class="del" data-delw="' + k + '" aria-label="Elimina">×</button></b></div>'; }).join('') + '</details>' : '') + '</section>';
   }
+  /* ---------- statistiche palestra (dalla scheda + giorni segnati a mano) ---------- */
+  function numIt(x) { var n = parseFloat(String(x || '').replace(',', '.')); return isNaN(n) ? 0 : n; }
+  function gymStats() {
+    var L = gymLog(), today = iso(NOW), att = {}, ses = [];
+    Object.keys(L).forEach(function (dk) {
+      if (dk > today || !gymDone(dk)) return; var s = L[dk], sets = 0, vol = 0, best = null;
+      Object.keys(s.sets || {}).forEach(function (id) { (s.sets[id] || []).forEach(function (r) {
+        if (!r || !r.done) return; sets++; var kg = numIt(r.kg), rp = numIt(r.reps); vol += kg * rp;
+        if (/^panca/.test(id) && kg && rp) { var e = kg * (1 + rp / 30); if (!best || e > best.e) best = { e: e, kg: kg, reps: rp }; }
+      }); });
+      att[dk] = 1; ses.push({ dk: dk, day: s.day || '', sets: sets, vol: vol, bench: best });
+    });
+    Object.keys(S.gymDays || {}).forEach(function (dk) { if (S.gymDays[dk] && dk <= today && !att[dk]) { att[dk] = 1; ses.push({ dk: dk, day: '', sets: 0, vol: 0, bench: null, manual: true }); } });
+    ses.sort(function (a, b) { return a.dk < b.dk ? -1 : 1; });
+    var mon = new Date(NOW); mon.setHours(12, 0, 0, 0); mon.setDate(mon.getDate() - TODAYI);
+    var weeks = []; for (var w = 7; w >= 0; w--) { var a = new Date(mon); a.setDate(a.getDate() - w * 7); var b = new Date(a); b.setDate(b.getDate() + 6); var n = 0; Object.keys(att).forEach(function (dk) { if (dk >= iso(a) && dk <= iso(b)) n++; }); weeks.push({ a: a, n: n }); }
+    var streak = 0; for (var k = weeks.length - 2; k >= 0; k--) { if (weeks[k].n >= 2) streak++; else break; } if (weeks[7].n >= 2) streak++;
+    var m0 = iso(NOW).slice(0, 7), month = Object.keys(att).filter(function (dk) { return dk.slice(0, 7) === m0; }).length;
+    return { ses: ses, weeks: weeks, streak: streak, month: month, total: Object.keys(att).length };
+  }
+  function gymStatsCard() {
+    var G = gymStats(), it = function (n) { return String(r1(n)).replace('.', ','); };
+    var wk = G.weeks[7].n, plan = 0, w0 = WK; WK = 0; for (var j = 0; j < 7; j++) if (isGym(j)) plan++; WK = w0;
+    var max = Math.max(4, Math.max.apply(null, G.weeks.map(function (w) { return w.n; })));
+    var bars = '<svg viewBox="0 0 320 120" class="gchart" role="img" aria-label="Allenamenti per settimana, ultime 8 settimane">' +
+      '<line x1="0" x2="320" y1="' + (100 - 3 / max * 90) + '" y2="' + (100 - 3 / max * 90) + '" class="gl3"/>' +
+      G.weeks.map(function (w, k) { var h = w.n / max * 90, x = k * 40 + 8; return '<rect x="' + x + '" y="' + (100 - h) + '" width="24" height="' + Math.max(h, 1) + '" rx="4" class="' + (k === 7 ? 'gbn' : 'gb') + '"/>' + (w.n ? '<text x="' + (x + 12) + '" y="' + (95 - h) + '" class="gv">' + w.n + '</text>' : '') + '<text x="' + (x + 12) + '" y="116" class="gx">' + w.a.getDate() + '/' + (w.a.getMonth() + 1) + '</text>'; }).join('') + '</svg>';
+    var bs = G.ses.filter(function (x) { return x.bench; }), bench = '';
+    if (bs.length) {
+      var lo = Math.min.apply(null, bs.map(function (x) { return x.bench.e; })), hi = Math.max.apply(null, bs.map(function (x) { return x.bench.e; })), span = Math.max(5, hi - lo);
+      var pts = bs.slice(-12), step = pts.length > 1 ? 300 / (pts.length - 1) : 0;
+      var line = pts.map(function (x, k) { return (10 + k * step).toFixed(1) + ',' + (90 - (x.bench.e - lo) / span * 75).toFixed(1); }).join(' ');
+      var first = bs[0].bench, last = bs[bs.length - 1].bench, d = last.e - first.e;
+      bench = '<h3 class="gh">Panca piana</h3><div class="kv"><span>Ultima serie migliore</span><b>' + it(last.kg) + ' kg × ' + last.reps + '</b></div>' +
+        '<div class="kv"><span>Massimale stimato</span><b>' + Math.round(last.e) + ' kg' + (bs.length > 1 ? ' <small class="' + (d >= 0 ? 'up' : 'dn') + '">' + (d >= 0 ? '+' : '') + it(d) + ' dall’inizio</small>' : '') + '</b></div>' +
+        (pts.length > 1 ? '<svg viewBox="0 0 320 100" class="gchart" role="img" aria-label="Andamento della panca"><polyline points="' + line + '" class="gline"/>' + pts.map(function (x, k) { return '<circle cx="' + (10 + k * step).toFixed(1) + '" cy="' + (90 - (x.bench.e - lo) / span * 75).toFixed(1) + '" r="3.5" class="gdot"/>'; }).join('') + '</svg>' : '');
+    }
+    var recent = G.ses.slice(-6).reverse().map(function (x) {
+      var dt = new Date(x.dk + 'T12:00:00');
+      return '<div class="kv"><span>' + dt.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' }) + (x.day ? ' · Giorno ' + x.day : '') + '</span><b>' + (x.manual ? 'segnato a mano' : x.sets + ' serie · ' + it(x.vol / 1000) + ' t') + '</b></div>';
+    }).join('');
+    return '<section class="card"><div class="ch"><h2>Palestra</h2><span>' + (G.total ? G.total + ' allenamenti registrati' : 'ancora nessun allenamento registrato') + '</span></div>' +
+      '<div class="kcal3"><div><small>Questa settimana</small><b>' + wk + ' / ' + plan + '</b></div><div><small>Questo mese</small><b>' + G.month + '</b></div><div><small>Settimane di fila</small><b>' + G.streak + '</b></div></div>' +
+      '<h3 class="gh">Allenamenti per settimana</h3>' + bars + '<p class="gl">La riga tratteggiata è l’obiettivo di 3 a settimana. Contano gli allenamenti registrati nella scheda e i giorni segnati con “Vado in palestra”.</p>' +
+      bench + (recent ? '<details class="more"' + (G.ses.length ? ' open' : '') + '><summary>Ultimi allenamenti</summary>' + recent + '</details>' : '') + '</section>';
+  }
   function weightCardF() {
     var P = planF(), t = P.t, W = S.wF || {}, ks = Object.keys(W).sort(), eng = S.engF || { tdee: TDEE0_F };
     var row = function (l, v) { return '<div class="kv"><span>' + l + '</span><b>' + v + '</b></div>'; }, it = function (n) { return String(r1(n)).replace('.', ','); };
@@ -1148,7 +1217,7 @@ var FOODS = /*FOODS*/;
       return '<button type="button" class="vid" data-vid="' + v[0] + '"><img src="https://i.ytimg.com/vi/' + v[0] + '/hqdefault.jpg" alt="" loading="lazy"><span class="play" aria-hidden="true">▶</span><b>' + esc(v[1]) + '</b><small>' + esc(v[2]) + '</small></button>';
     }).join('') + '</div>' + guideHTML() + '</section>';
   }
-  function renderAnalisi() { $('#main').innerHTML = (S.who === 'R' ? weightCard() : weightCardF()) + measCard() + howCard(); }
+  function renderAnalisi() { $('#main').innerHTML = (S.who === 'R' ? weightCard() + gymStatsCard() : weightCardF()) + measCard() + howCard(); }
   var shopHide = false;
   function renderSpesa() {
     var all = 0, got = 0;

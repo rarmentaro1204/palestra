@@ -1,7 +1,7 @@
 // Notifica di fine recupero, senza librerie esterne (solo Node).
 // La pagina manda: subscription push, id del cronometro, millisecondi, uid e token Firebase.
-// La funzione aspetta, poi controlla su Firestore che il cronometro sia ancora quello attivo
-// (se l'hai saltato o cambiato, nel documento "gym" c'è un altro id) e manda la push.
+// La funzione aspetta, poi controlla su Firestore che il cronometro non sia stato annullato
+// (se lo salti o lo cambi, la pagina scrive subito il suo id nel campo "cancel" del documento "gym") e manda la push.
 import crypto from 'node:crypto';
 
 const PROJECT = 'sitoberto-85f50';
@@ -47,8 +47,8 @@ async function stillActive(uid, token, id) {
     const u = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents/users/${encodeURIComponent(uid)}/state/gym`;
     const r = await fetch(u, { headers: { Authorization: 'Bearer ' + token } });
     if (!r.ok) return true;
-    const doc = await r.json(), v = JSON.parse(doc.fields && doc.fields.value && doc.fields.value.stringValue || 'null');
-    return !v || !('timer' in v) || v.timer === id;
+    const doc = await r.json(), c = doc.fields && doc.fields.cancel && doc.fields.cancel.stringValue;
+    return c !== id;
   } catch (e) { return true; }
 }
 
@@ -59,7 +59,7 @@ export default async (req) => {
     const wait = Math.max(0, Math.min(Number(ms) || 0, 14 * 60 * 1000));
     await new Promise((r) => setTimeout(r, wait));
     if (!(await stillActive(uid, token, id))) return;
-    const st = await sendPush(sub, JSON.stringify({ title: clip(title, 60) || '⏱ Recupero finito', body: clip(body, 140), tag: 'timer' }));
+    const st = await sendPush(sub, JSON.stringify({ title: clip(title, 60) || '⏱ Recupero finito', body: clip(body, 140), tag: 'timer-' + clip(id, 20) }));
     if (st >= 300) console.log('push rifiutata', st);
   } catch (e) {
     console.log('timer push non inviata', e && e.message);
