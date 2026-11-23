@@ -19,8 +19,16 @@ F = [
  ["Cous cous (crudo)", 356, 12.8, 72, 1.9, 80, "1 porzione", "g"],
  ["Gnocchi di patate", 150, 3.5, 33, 0.3, 200, "1 piatto", "g"],
  ["Pane comune", 270, 8.6, 55, 1.2, 50, "2 fette", "g"],
+ ["Pane (rosetta, michetta)", 275, 9, 56, 1.5, 60, "1 panino", "g"],
+ ["Pane casereccio / pagnotta", 260, 8.5, 53, 1.5, 50, "1 fetta spessa", "g"],
  ["Pane integrale", 240, 8.5, 45, 2, 50, "2 fette", "g"],
+ ["Pane di segale", 230, 7, 45, 1.5, 50, "2 fette", "g"],
+ ["Baguette", 275, 9, 56, 1.5, 60, "1 pezzo", "g"],
  ["Pane in cassetta", 270, 8.7, 49, 4, 50, "2 fette", "g"],
+ ["Pane in cassetta integrale", 250, 9.5, 42, 4.5, 50, "2 fette", "g"],
+ ["Pane tostato (fette confezionate)", 400, 11.5, 73, 5.5, 24, "3 fette", "g"],
+ ["Pane tostato in casa (fetta di pane abbrustolita)", 300, 9.5, 61, 1.5, 40, "1 fetta", "g"],
+ ["Bruschetta al pomodoro", 190, 5, 30, 5.5, 120, "2 bruschette", "g"],
  ["Fette biscottate integrali", 405, 12, 70, 6, 30, "3 fette", "g"],
  ["Crackers", 430, 10, 70, 11, 25, "1 pacchetto", "g"],
  ["Grissini", 420, 12, 69, 10, 20, "4 grissini", "g"],
@@ -166,6 +174,9 @@ F = [
  ["Frittata", 170, 11, 1, 13, 150, "1 porzione", "g"],
  ["Tramezzino", 260, 9, 25, 14, 120, "1 tramezzino", "g"],
  ["Toast prosciutto e formaggio", 280, 14, 30, 11, 140, "1 toast", "g"],
+ ["Toast (pancarré, prosciutto cotto e sottiletta, fatto in casa)", 255, 14, 26, 10, 110, "1 toast", "g"],
+ ["Toast con solo formaggio", 300, 11, 30, 14, 100, "1 toast", "g"],
+ ["Avocado toast (pane, avocado ½)", 230, 5, 25, 12, 140, "1 fetta grande", "g"],
  ["Arancino", 230, 7, 30, 9, 200, "1 arancino", "g"],
  ["Insalatona mista", 110, 7, 4, 7, 350, "1 insalatona", "g"],
  # bevande
@@ -178,6 +189,9 @@ F = [
  ["Succo di frutta", 50, 0.4, 12, 0, 200, "1 bicchiere", "ml"],
  ["Cappuccino", 45, 2.3, 3.5, 2.3, 150, "1 tazza", "ml"],
  ["Caffè", 2, 0.1, 0, 0, 30, "1 tazzina", "ml"],
+ ["Avocado", 160, 2, 1.8, 14.7, 70, "½ avocado", "g"],
+ ["Mango", 60, 0.8, 15, 0.4, 150, "1 fetta grande / ½ mango", "g"],
+ ["Mango essiccato", 320, 2.5, 78, 1, 30, "1 manciata", "g"]
 ]
 if __name__ == '__main__':
     names = [x[0] for x in F]

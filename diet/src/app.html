@@ -386,6 +386,14 @@ h1, h2, h3 { margin: 0; }
 .gchart .gdot { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
 .gh { font-size: 14px; margin: 14px 0 2px; }
 .kv small.up { color: var(--ok, #2E7D4F); font-weight: 600; } .kv small.dn { color: var(--bad); font-weight: 600; }
+
+.lsrow { display: flex; gap: 8px; align-items: stretch; margin-top: 6px; }
+.lsrow input { flex: 1; min-width: 0; margin: 0 !important; }
+.scanb { flex: none; width: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-size: 22px; color: var(--ink); }
+.offb { width: 100%; margin-top: 8px; padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--accent); background: transparent; color: var(--accent); font-weight: 600; font-size: 14px; text-align: left; }
+.scanv { position: relative; border-radius: 14px; overflow: hidden; background: #000; aspect-ratio: 4 / 3; margin: 8px 0; }
+.scanv video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scanl { position: absolute; left: 10%; right: 10%; top: 50%; height: 2px; background: #ff3b30; box-shadow: 0 0 8px #ff3b30; }
 </style>
 </head>
 <body>
@@ -902,8 +910,9 @@ var FOODS = /*FOODS*/;
         '<label class="lck"><input type="checkbox" id="lms" checked> Ricordalo per la prossima volta</label>' +
         '<div class="lrow2"><button type="button" class="chipbtn" data-lback>Indietro</button><button type="button" class="chipbtn hi" data-lmadd>Aggiungi</button></div></div>';
     }
-    return '<p class="lh">…oppure aggiungi gli alimenti</p><input class="search" id="lq" type="search" placeholder="Cerca: pasta, pizza, mela, birra…" value="' + esc(LG.q) + '" autocomplete="off" style="margin-top:6px">' +
-      '<div class="lres" id="lres">' + resHTML() + '</div><button type="button" class="lnk" data-lman>Non lo trovi? Inserisci le calorie a mano</button>';
+    if (LG.scan) return scanHTML();
+    return '<p class="lh">…oppure aggiungi gli alimenti</p><div class="lsrow"><input class="search" id="lq" type="search" placeholder="Cerca: pasta, pizza, mela, Pan di Stelle…" value="' + esc(LG.q) + '" autocomplete="off"><button type="button" class="scanb" data-lscan aria-label="Scansiona il codice a barre">▥</button></div>' +
+      '<div class="lres" id="lres">' + resHTML() + '</div><div id="loff">' + offHTML() + '</div><button type="button" class="lnk" data-lman>Non lo trovi? Inserisci le calorie a mano</button>';
   }
   function resHTML() {
     var list = LG.q.trim() ? searchFoods(LG.q) : S.recent.map(function (n) { return allFoods().filter(function (f) { return f[0] === n; })[0]; }).filter(Boolean).slice(0, 6);
@@ -913,6 +922,79 @@ var FOODS = /*FOODS*/;
       var u = unitOf(f);
       return '<button type="button" class="lfi" data-lf="' + j + '"><b>' + esc(f[0]) + '</b><small>' + (f[7] === 'pz' ? f[1] + ' kcal a porzione' : esc(f[6]) + ' (' + f[5] + ' ' + u + ') = ' + Math.round(f[1] * f[5] / 100) + ' kcal · ' + f[1] + ' kcal/100 ' + u) + '</small></button>';
     }).join('');
+  }
+  /* ---------- prodotti confezionati: Open Food Facts (database libero, dati ODbL) ---------- */
+  var OFF_F = 'code,product_name,product_name_it,brands,nutriments,serving_size,serving_quantity,quantity';
+  function offFood(p) {
+    var n = p.nutriments || {}, k = n['energy-kcal_100g']; if (k == null && n.energy_100g != null) k = n.energy_100g / 4.184;
+    if (k == null) return null;
+    var name = (p.product_name_it || p.product_name || '').trim(); if (!name) return null;
+    var br = (p.brands || '').split(',')[0].trim(), sq = parseFloat(p.serving_quantity), liq = /\bml\b|\bcl\b|\bl\b/i.test(p.quantity || '') && !/g\b/i.test(p.quantity || '');
+    return [name + (br && name.toLowerCase().indexOf(br.toLowerCase()) < 0 ? ' · ' + br : ''), Math.round(k), r1(+n.proteins_100g || 0), r1(+n.carbohydrates_100g || 0), r1(+n.fat_100g || 0),
+      sq > 0 && sq < 1000 ? Math.round(sq) : 100, sq > 0 && p.serving_size ? String(p.serving_size).slice(0, 30) : '100 ' + (liq ? 'ml' : 'g'), liq ? 'ml' : 'g', 'off:' + (p.code || '')];
+  }
+  function offHTML() {
+    var O = LG.off; if (!LG.q.trim() || LG.q.trim().length < 3) return '';
+    if (!O || O.q !== LG.q.trim()) return '<button type="button" class="offb" data-loff>🌐 Cerca «' + esc(LG.q.trim()) + '» tra i prodotti confezionati</button>';
+    if (O.st === 'load') return '<p class="lempty">Cerco su Open Food Facts…</p>';
+    if (O.st === 'err') return '<p class="lempty">Ricerca online non riuscita (connessione?). Riprova o inseriscilo a mano.</p><button type="button" class="offb" data-loff>Riprova</button>';
+    if (!O.list.length) return '<p class="lempty">Nessun prodotto confezionato trovato. Prova con la marca, o scansiona il codice a barre.</p>';
+    return '<p class="lh" style="margin-top:8px">Prodotti confezionati · Open Food Facts</p>' + O.list.map(function (f, j) {
+      return '<button type="button" class="lfi" data-loffi="' + j + '"><b>' + esc(f[0]) + '</b><small>' + esc(f[6]) + ' = ' + Math.round(f[1] * f[5] / 100) + ' kcal · ' + f[1] + ' kcal/100 ' + f[7] + '</small></button>';
+    }).join('');
+  }
+  function offSearch() {
+    var q = LG.q.trim(); LG.off = { q: q, st: 'load', list: [] }; $('#loff').innerHTML = offHTML();
+    fetch('https://it.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=24&lc=it&cc=it&fields=' + OFF_F + '&search_terms=' + encodeURIComponent(q))
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (j) { if (!LG || !LG.off || LG.off.q !== q) return; var seen = {}; LG.off.list = (j.products || []).map(offFood).filter(function (f) { if (!f || seen[f[0]]) return false; seen[f[0]] = 1; return true; }).slice(0, 12); LG.off.st = 'ok'; var b = $('#loff'); if (b) b.innerHTML = offHTML(); })
+      .catch(function () { if (!LG || !LG.off) return; LG.off.st = 'err'; var b = $('#loff'); if (b) b.innerHTML = offHTML(); });
+  }
+  function offByCode(code) {
+    LG.scanMsg = 'Cerco il prodotto ' + code + '…'; paintScanMsg();
+    fetch('https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(code) + '.json?fields=' + OFF_F)
+      .then(function (r) { if (r.status === 404) return { status: 0 }; if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (j) {
+        var f = j && j.status === 1 && j.product ? offFood(j.product) : null;
+        if (!f) { LG.scanMsg = 'Prodotto ' + code + ' non trovato o senza valori nutrizionali. Inseriscilo a mano: le calorie sono sull’etichetta.'; return paintScanMsg(); }
+        stopScan(); LG.scan = false; LG.pick = f; lgRefresh(true);
+      })
+      .catch(function () { LG.scanMsg = 'Connessione non riuscita: riprova.'; paintScanMsg(); });
+  }
+  function keepOff(f) { if (!f[8]) return; if (!S.myfoods.some(function (x) { return x[0] === f[0]; })) { S.myfoods.unshift(f.slice(0, 8)); S.myfoods = S.myfoods.slice(0, 200); } }
+  /* ---------- scansione del codice a barre con la fotocamera ---------- */
+  var SCAN = { stream: null, reader: null, timer: 0, done: false };
+  function scanHTML() {
+    return '<div class="lpick"><h3>Scansiona il codice a barre</h3><div class="scanv"><video id="scv" playsinline muted autoplay></video><span class="scanl"></span></div>' +
+      '<p class="lpk" id="scmsg">' + esc(LG.scanMsg || 'Inquadra le barre della confezione, ben illuminate.') + '</p>' +
+      '<label for="lbc">…oppure scrivi le cifre del codice</label><div class="lsrow"><input type="text" id="lbc" inputmode="numeric" placeholder="Es. 8076809513753" autocomplete="off"><button type="button" class="chipbtn hi" data-lbc>Cerca</button></div>' +
+      '<div class="lrow2"><button type="button" class="chipbtn" data-lback>Indietro</button></div></div>';
+  }
+  function paintScanMsg() { var m = document.getElementById('scmsg'); if (m) m.textContent = LG.scanMsg || ''; }
+  function gotCode(c) { if (SCAN.done) return; SCAN.done = true; if (navigator.vibrate) navigator.vibrate(80); offByCode(String(c)); setTimeout(function () { SCAN.done = false; }, 2500); }
+  function loadZX() { return window.ZXing ? Promise.resolve() : new Promise(function (ok, ko) { var sc = document.createElement('script'); sc.src = 'vendor/zxing.min.js'; sc.onload = ok; sc.onerror = ko; document.head.appendChild(sc); }); }
+  function startScan() {
+    var v = document.getElementById('scv'); if (!v) return; SCAN.done = false;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { LG.scanMsg = 'Fotocamera non disponibile qui: scrivi le cifre del codice.'; return paintScanMsg(); }
+    if ('BarcodeDetector' in window) {
+      var det = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }).then(function (st) {
+        SCAN.stream = st; v.srcObject = st; v.play();
+        SCAN.timer = setInterval(function () { if (v.readyState < 2) return; det.detect(v).then(function (r) { if (r && r[0]) gotCode(r[0].rawValue); }).catch(function () {}); }, 300);
+      }).catch(camErr);
+      return;
+    }
+    loadZX().then(function () {
+      var Z = window.ZXing, hints = new Map(); hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.UPC_A, Z.BarcodeFormat.UPC_E]);
+      SCAN.reader = new Z.BrowserMultiFormatReader(hints, 300);
+      return SCAN.reader.decodeFromConstraints({ video: { facingMode: 'environment' } }, v, function (res) { if (res) gotCode(res.getText()); });
+    }).catch(camErr);
+  }
+  function camErr() { LG.scanMsg = 'Non riesco ad aprire la fotocamera (permesso negato?). Scrivi le cifre del codice qui sotto.'; paintScanMsg(); }
+  function stopScan() {
+    clearInterval(SCAN.timer); SCAN.timer = 0;
+    try { if (SCAN.reader) SCAN.reader.reset(); } catch (e) {} SCAN.reader = null;
+    if (SCAN.stream) { SCAN.stream.getTracks().forEach(function (t) { t.stop(); }); SCAN.stream = null; }
   }
   function pickKcal() { var el = document.getElementById('lgr'), q = el ? parseFloat(String(el.value).replace(',', '.')) : LG.pick[5]; if (!(q > 0)) return 'Inserisci la quantità'; var e = entryOf(LG.pick, q); return '<b>' + e.k + '</b> kcal · proteine ' + Math.round(e.p) + ' g'; }
   function curHTML() {
@@ -1292,7 +1374,7 @@ var FOODS = /*FOODS*/;
   /* ---------- foglio ricetta / idee ---------- */
   var lastFocus = null;
   function openSheet(html) { lastFocus = document.activeElement; $('#sheetBody').innerHTML = html; $('#sheet').classList.add('on'); $('#scrim').classList.add('on'); $('#sheet').scrollTop = 0; var x = $('#sheet .x'); if (x) x.focus(); }
-  function closeSheet() { $('#sheet').classList.remove('on'); $('#scrim').classList.remove('on'); if (lastFocus) try { lastFocus.focus(); } catch (e) {} }
+  function closeSheet() { stopScan(); $('#sheet').classList.remove('on'); $('#scrim').classList.remove('on'); if (lastFocus) try { lastFocus.focus(); } catch (e) {} }
   function recipeHTML(id) {
     var r = RBY[id], who = S.who; if (!r) return '';
     var ing = r.ing.map(function (x) { var q = qty(x[1], who); return q === null ? '' : '<li><span>' + esc(x[0].replace(/\s*★/, '')) + '</span><span>' + esc(q) + '</span></li>'; }).join('');
@@ -1324,10 +1406,14 @@ var FOODS = /*FOODS*/;
     if (ds.log) return openLog(ds.log);
     if (LG) {
       if (ds.lplan) { var mm = mealOf(LG.key, LG.i), fx = +ds.lplan; LG.items = LG.items.filter(function (e) { return !e.plan; }); LG.items.unshift({ n: 'Pasto del piano', q: fx === 1 ? 'tutto' : '×' + String(fx).replace('.', ','), k: Math.round(mm.kcal * fx), p: r1(mm.p * fx), c: r1(mm.c * fx), f: r1(mm.f * fx), plan: fx }); return lgRefresh(); }
+      if (ds.loff !== undefined) return offSearch();
+      if (ds.loffi) { LG.pick = LG.off.list[+ds.loffi]; lgRefresh(true); var g2 = $('#lgr'); if (g2) { g2.focus(); g2.select(); } return; }
+      if (ds.lscan !== undefined) { LG.scan = true; LG.scanMsg = ''; lgRefresh(true); return startScan(); }
+      if (ds.lbc !== undefined) { var bc = String($('#lbc').value || '').replace(/\D/g, ''); if (bc.length < 8) return $('#lbc').focus(); return offByCode(bc); }
       if (ds.lf) { LG.pick = LG.res[+ds.lf]; lgRefresh(true); var gi = $('#lgr'); if (gi) { gi.focus(); gi.select(); } return; }
       if (ds.lqty) { $('#lgr').value = String(ds.lqty).replace('.', ','); $('#lpk').innerHTML = pickKcal(); return; }
-      if (ds.ladd !== undefined) { var q = parseFloat(String($('#lgr').value).replace(',', '.')); if (!(q > 0)) return $('#lgr').focus(); LG.items.push(entryOf(LG.pick, q)); addRecent(LG.pick[0]); LG.pick = null; LG.q = ''; return lgRefresh(true); }
-      if (ds.lback !== undefined) { LG.pick = null; LG.man = false; return lgRefresh(true); }
+      if (ds.ladd !== undefined) { var q = parseFloat(String($('#lgr').value).replace(',', '.')); if (!(q > 0)) return $('#lgr').focus(); LG.items.push(entryOf(LG.pick, q)); keepOff(LG.pick); addRecent(LG.pick[0]); LG.pick = null; LG.q = ''; return lgRefresh(true); }
+      if (ds.lback !== undefined) { if (LG.scan) stopScan(); LG.pick = null; LG.man = false; LG.scan = false; return lgRefresh(true); }
       if (ds.lman !== undefined) { LG.man = true; lgRefresh(true); $('#lmn').focus(); return; }
       if (ds.lmadd !== undefined) {
         var nm = $('#lmn').value.trim(), kc = parseFloat(String($('#lmk').value).replace(',', '.')), pr = parseFloat(String($('#lmp').value).replace(',', '.')) || 0;
@@ -1387,10 +1473,10 @@ var FOODS = /*FOODS*/;
   });
   document.addEventListener('input', function (e) {
     if (e.target.id === 'rq') { rq = e.target.value; renderRicette(true); }
-    if (e.target.id === 'lq' && LG) { LG.q = e.target.value; $('#lres').innerHTML = resHTML(); }
+    if (e.target.id === 'lq' && LG) { LG.q = e.target.value; $('#lres').innerHTML = resHTML(); $('#loff').innerHTML = offHTML(); }
     if (e.target.id === 'lgr' && LG && LG.pick) $('#lpk').innerHTML = pickKcal();
   });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'lgr') { e.preventDefault(); var b = document.querySelector('[data-ladd]'); if (b) b.click(); } });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'lq' && LG && LG.q.trim().length >= 3) { e.preventDefault(); offSearch(); } if (e.key === 'Enter' && e.target.id === 'lgr') { e.preventDefault(); var b = document.querySelector('[data-ladd]'); if (b) b.click(); } });
   window.addEventListener('scroll', function () { $('#top').classList.toggle('sc', window.scrollY > 4); }, { passive: true });
   /* swipe tra i giorni */
   var sx = null, sy = null;

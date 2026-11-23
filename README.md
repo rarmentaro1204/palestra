@@ -21,3 +21,9 @@ Le foto degli esercizi nuovi (chest press, panca inclinata manubri, rotazioni es
 ## Ricette
 
 `diet/src/ricette.py` genera `ric.json` (109 ricette). Le idee vengono da GialloZafferano, dai blog di GialloZafferano e da Fatto in casa da Benedetta: non copiamo testi né foto, le dosi sono quelle del piano e i passaggi sono riscritti in versione leggera; ogni ricetta ha il link all'originale (`src`).
+
+## Alimenti
+
+- `diet/src/foods.py`: alimenti di base (valori medi CREA/USDA).
+- Prodotti confezionati: ricerca e codice a barre su [Open Food Facts](https://world.openfoodfacts.org) (database libero, licenza ODbL), chiamato direttamente dal browser; i prodotti usati finiscono tra "i miei alimenti".
+- Scansione: `BarcodeDetector` dove c'è, altrimenti `diet/vendor/zxing.min.js` ([@zxing/library](https://github.com/zxing-js/library) 0.21.3, licenza in `diet/vendor/ZXING-LICENSE`).
